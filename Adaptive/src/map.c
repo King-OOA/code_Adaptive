@@ -20,7 +20,7 @@ void build_4_map(Expand_Node_t *expand_node, Pat_Num_t dif_ch_num)
   _4_Map_t *_4_map;
   Char_t ch;
   Char_t *keys;
-  Pat_Num_t i, j;
+  int i, j;
 
   _4_map = CALLOC(1, _4_Map_t);
   memset(_4_map->keys, UCHAR_MAX, 4);
@@ -59,7 +59,7 @@ void build_16_map(Expand_Node_t *expand_node, Pat_Num_t dif_ch_num)
   _16_Map_t *_16_map;
   Char_t ch;
   Char_t *keys;
-  Pat_Num_t i, j;
+  int i, j;
 
   _16_map = CALLOC(1, _16_Map_t);
   memset(_16_map->keys, UCHAR_MAX, 16);
@@ -103,6 +103,7 @@ void build_48_map(Expand_Node_t *expand_node, Pat_Num_t dif_ch_num)
 
   for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) {
     next_suf = cur_suf->next;
+ 
     ch = *cur_suf->str;
     if (_48_map->index[ch] == -1)
       _48_map->index[ch] = i++;
@@ -114,7 +115,7 @@ void build_48_map(Expand_Node_t *expand_node, Pat_Num_t dif_ch_num)
       set_bit(_48_map->pat_end_flag, index);
   }
 
-  assert(--i == dif_ch_num);
+  assert(i == dif_ch_num);
   
   expand_node->next_level = _48_map;
   expand_node->type = _48_MAP;
