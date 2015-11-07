@@ -10,7 +10,7 @@ vpath %.c ./src/
 CFLAGS = -Wall -c -O3 -I$(INCLUDE_1) -I$(INCLUDE_2)
 
 a.out:  $(OBJS)
-	gcc $(OBJS) -L$(LIBPATH) -lADT  -lcommon  -lm -lbinary -ltextools
+	gcc $(OBJS) -L$(LIBPATH) -lADT -lmakedata -lcommon  -lm -lbinary -ltextools
 	rm *.o
 
 main.o: main.c share.h hash.h common.h

@@ -25,7 +25,6 @@ typedef struct _48_map {
 
 typedef struct _256_map{
   Char_t pat_end_flag[256/8];
-  Char_t match_flag[256/8];
   Expand_Node_t expand_nodes[256];
 } _256_Map_t;
 

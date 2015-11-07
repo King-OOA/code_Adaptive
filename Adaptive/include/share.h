@@ -53,10 +53,10 @@ void get_num_and_lsp(Expand_Node_t const *expand_node, Pat_Num_t  *total_suf_p, 
 Suffix_Node_t *cut_head(Suffix_Node_t *suf_node, Pat_Len_t lsp);
 void insert_to_expand(Expand_Node_t *expand_node, Suffix_Node_t *suf_node);
 inline int same_str(Char_t const *s1, Char_t const *s2, Pat_Len_t len);
-inline int str_n_cmp(char const *s1, char const *s2, Pat_Len_t len);
+inline int str_n_cmp(Char_t const *s1, Char_t const *s2, Pat_Len_t len);
 void print_str(char const *s, Pat_Len_t len, char terminator);
 List_Node_t * list_radix_sort(List_Node_t *list_head);
-
+void remove_duplicate(Suffix_Node_t *suf_list);
 
 void print_suffix(Suffix_Node_t *cur_suf);
 

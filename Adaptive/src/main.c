@@ -5,6 +5,7 @@
 #include <time.h>
 #include "common.h"
 #include "textools.h"
+#include "makedata.h"
 #include "hash.h"
 #include "share.h"
 #include "queue.h"
@@ -17,7 +18,7 @@ const char *type_name[] = {"","array", "hash", "4 map", "16 map", "48 map", "256
 
 Expand_Node_t *(*match_fun[]) (void *, Char_t const **, Bool_t *) =
 {
-  NULL, match_array, match_hash, match_4_map, match_16_map, match_48_map, match_256_map
+  NULL, match_array_2, match_hash, match_4_map, match_16_map, match_48_map, match_256_map
 };
 
 Suffix_Node_t *make_suffix_node(char const *pat)
@@ -51,28 +52,13 @@ static Suffix_Node_t *read_pats(FILE *pats_fp)
      return list_head;
 }
 
-void remove_duplicate(Suffix_Node_t *suf_list)
-{
-  Suffix_Node_t *left, *right;
-  
-  left = suf_list;
-  right = left->next;
-  
-  while (right) 
-    if (strcmp(left->str, right->str) == 0) {
-      right = right->next; free(left->next); left->next = right;
-    } else {
-      left = right; right = left->next;
-    }
-}
-
 static Expand_Node_t *make_root(FILE *pats_fp)
 {
      Suffix_Node_t *pat_list;
      Expand_Node_t *root = CALLOC(1, Expand_Node_t);
      
-     pat_list = list_radix_sort(read_pats(pats_fp));
-     remove_duplicate(pat_list);
+     pat_list = list_radix_sort(read_pats(pats_fp)); /* 先排序 */
+     remove_duplicate(pat_list); /* 再去重 */
     
      root->next_level = pat_list;
      
@@ -88,11 +74,11 @@ void choose_adaptor(Expand_Node_t *expand_node)
      //printf("%d\n", dif_prf_num);
   
      //exit(EXIT_SUCCESS);  
-
+ 
      if (lsp == 1)
 	  build_map(expand_node, dif_prf_num);
      else {
-	  if (dif_prf_num <= 15)
+	  if (dif_prf_num <= 100)
 	       build_array(expand_node, dif_prf_num, lsp);
 	  else
 	       build_hash(expand_node, dif_prf_num, lsp);
@@ -124,47 +110,78 @@ void choose_adaptor(Expand_Node_t *expand_node)
 
 /* } */
 
-Bool_t match_round(Expand_Node_t *expand_node, Char_t *text, char *pat_buf);
+Bool_t match_round(Expand_Node_t *expand_node, Char_t *text, char *pat_buf)
+{
+  Bool_t is_matched = FALSE, is_pat_end = FALSE;
+  Char_t *s = text;
+  Pat_Len_t pat_len;
+  
+  while (expand_node && expand_node->type != END) {
+    expand_node = match_fun[expand_node->type](expand_node->next_level, &s, &is_pat_end);
+ 
+   if (is_pat_end) {
+      is_matched = TRUE;
+      pat_len = s - text;
+      *pat_buf++ = ' ';
+      memcpy(pat_buf, text, pat_len);
+      pat_buf += pat_len;
+      is_pat_end = FALSE;
+    }
+  }
+  
+  *pat_buf = '\0';
+  
+  return is_matched;
+}
 
 int main(int argc, char **argv)
 {
      FILE *pats_fp, *text_fp;
-     Expand_Node_t *root, *expand_node;
+     Expand_Node_t *root;
      int i;
      size_t file_size;
      clock_t start, end;
      Char_t *text_buf;
      Char_t *text_p, *text_end;
      char pat_buf[1000];
+     Pat_Num_t total_suf_num = 0, dif_prf_num = 0;
+     Pat_Len_t lsp = 0; /* 最短模式串长 */
+     int is_pat_end = 0;
      
-  
+     queue = make_queue();
+//     cre_rand_pats("lsp_3", 100, 3, 20, 1, 231);
      pats_fp = Fopen(argv[1], "r");
+
      fprintf(stderr, "\nMaking root..."); fflush(stdout);
      start = clock();
      root = make_root(pats_fp);
-//   print_suffix(root->next_level);
-     end = clock();
-     fprintf(stderr, "Done!  \n%f\n",
-	     (double) (end - start) / CLOCKS_PER_SEC);
-     Fclose(pats_fp);
+     get_num_and_lsp(root, &total_suf_num, &dif_prf_num, &lsp);
+     printf("total_suf_num: %u, dif_prf_num: %u, lsp: %u\n", total_suf_num, dif_prf_num, lsp);
      
-     queue = make_queue();
-     in_queue(queue, root);
+     //build_array(root,  dif_prf_num,  lsp);
+     //print_array(root->next_level);
+     end = clock();
+
+     fprintf(stderr, "Done!  \n%f\n",
+     	     (double) (end - start) / CLOCKS_PER_SEC);
+     Fclose(pats_fp);
+
      fprintf(stderr, "\nConstructing..."); fflush(stdout);
      start = clock();
+     in_queue(queue, root);
      while (!queue_is_empty(queue))
-	  choose_adaptor(out_queue(queue));
+     	  choose_adaptor(out_queue(queue));
      end = clock();
      fprintf(stderr, "Done!  \n%f\n",
-	     (double) (end - start) / CLOCKS_PER_SEC);
+     	     (double) (end - start) / CLOCKS_PER_SEC);
   
      free_queue(queue);
      
      for (i = 0; i < TYPE_NUM; i++)
 	  if (type_num[i])
 	       printf("%s: %u\n", type_name[i], type_num[i]);
+     //exit(EXIT_SUCCESS);  
 
-//     exit(EXIT_SUCCESS);  
 /* 读文本 */
      fprintf(stderr, "\nLoading text..."); fflush(stdout);
      start = clock();
@@ -180,38 +197,20 @@ int main(int argc, char **argv)
      fprintf(stderr, "\nMatching..."); fflush(stdout);
      start = clock();
      text_end = text_buf + file_size - 1;
+     putchar('\n');
+
      for (text_p = text_buf; text_p < text_end; text_p++) {
-	  if (match_round(root, text_p, pat_buf))
+	  if (match_round(root, text_p, pat_buf)){
 	       ;
-//       printf("%ld: %s\n", text_p - text_buf + 1, pat_buf);
+	       
+	       printf("%ld: %s\n", text_p - text_buf + 1, pat_buf);
+	  }
      }
      end = clock();
      fprintf(stderr, "Done!  \n%f\n",
 	     (double) (end - start) / CLOCKS_PER_SEC);
 }
 
-Bool_t match_round(Expand_Node_t *expand_node, Char_t *text, char *pat_buf)
-{
-  Bool_t is_matched = FALSE, is_pat_end = FALSE;
-  Char_t *s = text;
-  Pat_Len_t pat_len;
-  
-  while (expand_node && expand_node->type != END) {
-    expand_node = match_fun[expand_node->type](expand_node->next_level, &s, &is_pat_end);
-    if (is_pat_end) {
-      is_matched = TRUE;
-      pat_len = s - text;
-      *pat_buf++ = ' ';
-      memcpy(pat_buf, text, pat_len);
-      pat_buf += pat_len;
-      is_pat_end = FALSE;
-    }
-  }
-  
-  *pat_buf = '\0';
-  
-  return is_matched;
-}
 
   /* get_num_and_lsp(root, &total_suf_num, &dif_prf_num, &lsp); */
   /* printf("total: %u, dif: %u, lsp: %d\n", total_suf_num, dif_prf_num, lsp); */

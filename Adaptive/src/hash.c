@@ -39,30 +39,16 @@ Hash_Table_t *make_hash_table(Pat_Num_t slots_num, Pat_Len_t lsp, char power)
      return new_hash_table;
 }
 
-/* static Collision_Elmt_t *enlarge_coli_array(Slot_t *slot) */
-/* { */
-/*      Collision_Elmt_t *new_coli_elmt; */
-     
-/*      if ((slot->collision_structure = /\* 在原有的基础上新分配一个 *\/ */
-/* 	  realloc(slot->collision_structure, ++slot->item_num * sizeof(Collision_Elmt_t))) == NULL) { */
-/* 	  fprintf(stderr, "Realloc failed!\n"); */
-/* 	  exit(EXIT_FAILURE); */
-/*      } */
-     
-/*      new_coli_elmt = (Collision_Elmt_t *) slot->collision_structure + slot->item_num - 1; /\* 指向新分配的冲突项 *\/ */
-/*      new_coli_elmt->flag[0] = 0u;	/\* 默认字符串放于节点外,也不是终止节点 *\/ */
-/*      new_coli_elmt->expand_node.type = 0; */
-/*      new_coli_elmt->expand_node.next_level = NULL; */
-     
-/*      return new_coli_elmt; */
-/* } */
+/* 保存hash槽链表尾指针,用于维持槽链表有序 */
+static Suffix_Node_t ***make_tail(Pat_Num_t slots_num, Expand_Node_t *slot)
+{
+  Suffix_Node_t ***tail = MALLOC(slots_num, Suffix_Node_t **), ***p = tail;
 
-
-/* void build_collision_structure(Slot_t *slot, Pat_Num_t item_num) */
-/* { */
-/*   if (item_num < ) */
-
-/* } */
+  while (slots_num--) 
+    *p++ = (Suffix_Node_t **) &(slot++)->next_level;
+  
+  return tail;
+}
 
 void build_hash(Expand_Node_t *expand_node, Pat_Num_t dif_prf_num, Pat_Len_t lsp)  
 {
@@ -71,22 +57,29 @@ void build_hash(Expand_Node_t *expand_node, Pat_Num_t dif_prf_num, Pat_Len_t lsp
   Suffix_Node_t *cur_suf, *next_suf;
   Pat_Num_t slots_num;
   Expand_Node_t *slot;
-  
+  unsigned hash_value;
+  Suffix_Node_t ***tail;
+
   for (power = 1; dif_prf_num > power2[power]; power++)
     ;
      
-  power--;
-  hash_table = make_hash_table(power2[power], lsp, power);
-    
+  slots_num = power2[--power];
+  hash_table = make_hash_table(slots_num, lsp, power);
+  tail = make_tail(slots_num, hash_table->slots);
+  
   for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) { /* 把所有后缀放入其对应的哈希槽中 */
-    next_suf = cur_suf->next;
-    insert_to_expand(hash_table->slots + hash(cur_suf->str, lsp, power), cur_suf); /* 不用cut_head,原样插入 */
+    next_suf = cur_suf->next; cur_suf->next = NULL;
+    hash_value = hash(cur_suf->str, lsp, power);
+    *tail[hash_value] = cur_suf;
+    tail[hash_value] = &cur_suf->next;
+    //insert_to_expand(hash_table->slots + hash(cur_suf->str, lsp, power), cur_suf); /* 不用cut_head,原样插入 */
   }
 	
   expand_node->next_level = hash_table;
   expand_node->type = HASH;
   type_num[HASH]++;
-  
+  free(tail);
+
   /* 将hash表新产生的expand_node加入队列 */
   for (slots_num = hash_table->slots_num, slot = hash_table->slots; slots_num; slot++, slots_num--)
     if (slot->next_level)
@@ -158,42 +151,27 @@ void build_hash(Expand_Node_t *expand_node, Pat_Num_t dif_prf_num, Pat_Len_t lsp
 /*   } */
 
 /* hash表只能确定一定不匹配的串,可能匹配的串需要由对应expand node的下一级来进一步判断 */
+
+/* 只能判断一定不匹配,将文本映射到相应哈希槽所对应的结构中,然后由该结构来进一步判断 */
 Expand_Node_t *match_hash(Hash_Table_t *hash_table, Char_t const **text, Bool_t *is_pat_end)
 {
   Char_t const *s = *text;
   Expand_Node_t *slot = hash_table->slots + hash(s, hash_table->lsp, hash_table->power);
   
-  if (slot->next_level == NULL) /* 肯定不匹配 */
-    return NULL;
-     
-  *is_pat_end = FALSE;
-    
-  return slot;  /* 可能匹配,需要由该expand node的下一级来判定 */
+  return slot->next_level == NULL ? NULL : slot;
 }
 
-/* void print_hash(Hash_Table_t *hash_table) */
-/* { */
-/*     Slot_t *slot = hash_table->slots; */
-/*     Pat_Num_t i, j; */
-/*     Pat_Num_t slots_num = hash_table->slots_num, item_num; */
-/*     Pat_Len_t lsp = hash_table->lsp; */
-/*     Collision_Elmt_t *coli_array; */
-/*     Char_t *sub_pat; */
-/*     Suffix_Node_t *cur_suf; */
+void print_hash(Hash_Table_t *hash_table)
+{
+    Expand_Node_t *slot = hash_table->slots;
+    Pat_Num_t i;
+    Pat_Num_t slots_num = hash_table->slots_num;
+    Pat_Len_t lsp = hash_table->lsp;
      
-/*     printf("Hashing@ slots number: %u, lsp: %u\n", slots_num, lsp); */
-/*     for (i = 0; i < slots_num; i++) */
-/*       if (item_num = slot[i].item_num) { */
-/* 	coli_array = slot[i].collision_structure; */
-/* 	printf("\nslot %d :\n", i); */
-/* 	for (j = 0; j < item_num; j++) { */
-/* 	  sub_pat = IS_IN_NODE(coli_array[j].flag) ? coli_array[j].str.buf : coli_array[j].str.p; */
-/* 	  print_str(sub_pat, lsp, ':'); */
-/* 	  for (cur_suf = coli_array[j].expand_node.next_level; */
-/* 	       cur_suf; */
-/* 	       cur_suf = cur_suf->next) */
-/* 	    printf(" %s", cur_suf->str); */
-/* 	  putchar('\n'); */
-/* 	} */
-/*       } */
-/*   } */
+    printf("Hashing@ slots number: %u, lsp: %u\n", slots_num, lsp);
+    for (i = 0; i < slots_num; slot++, i++)
+      if (slot->next_level) {
+    	printf("slot num: %u\n", i);
+    	print_suffix(slot->next_level);
+      }
+}

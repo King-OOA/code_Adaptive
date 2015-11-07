@@ -85,31 +85,43 @@ inline void get_num_and_lsp(Expand_Node_t const *expand_node, Pat_Num_t *total_s
   
   *lsp_p = lsp; *total_suf_p = num;
   
+  /* 确定dif_prf_num */
   num = 1;
   left = expand_node->next_level; right = left->next;
-  while (right) 
-    if (same_str(left->str, right->str, lsp)) 
-      right = right->next; 
+  while (right)
+    if (same_str(left->str, right->str, lsp))
+      right = right->next;
     else {
       left = right; right = left->next; num++;
     }
 
-  /* 确定dif_prf_num */
+
   /* buf = MALLOC(lsp * num, Char_t); */
   /* num = 0; */
   /* for (cur_suf = expand_node->next_level; cur_suf; cur_suf = cur_suf->next) { /\* 去重统计 *\/ */
   /*   for (i = 0, s = buf; i < num && !same_str(s, cur_suf->str, lsp); i++, s += lsp) */
   /*     ; */
-    
   /*   if (i == num) { */
   /*     memcpy(s, cur_suf->str, lsp); */
   /*     num++; */
   /*   } */
   /* } */
-  
+  /* free(buf); */
+
   *dif_prf_p = num;
-  
-  //  free(buf);
+}
+
+/* 有序链表去重,头节点一定保留 */
+void remove_duplicate(Suffix_Node_t *suf_list)
+{
+  Suffix_Node_t *left = suf_list, *right = left->next;
+
+  while (right) 
+    if (strcmp(left->str, right->str) == 0) {
+      right = right->next; free(left->next); left->next = right;
+    } else {
+      left = right; right = left->next;
+    }
 }
 
 Suffix_Node_t *cut_head(Suffix_Node_t *suf_node, Pat_Len_t lsp)
@@ -151,7 +163,7 @@ inline int same_str(Char_t const *s1, Char_t const *s2, Pat_Len_t len)
   return len == 0 ? TRUE : FALSE;
 }
 
-inline int str_n_cmp(char const *s1, char const *s2, Pat_Len_t len)
+inline int str_n_cmp(Char_t const *s1, Char_t const *s2, Pat_Len_t len)
 {
   while (len && *s1 == *s2)
     len--, s1++, s2++;
