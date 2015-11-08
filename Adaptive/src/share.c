@@ -1,10 +1,9 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "share.h"
 #include "common.h"
-
-
 
 #define ALPHABET_SIZE 256
 #define STACK_SIZE 1000000
@@ -24,8 +23,9 @@ List_Node_t * list_radix_sort(List_Node_t *list_head)
 {
     static List_Node_t *pile[ALPHABET_SIZE], *tail[ALPHABET_SIZE];
     List_Node_t *list_tail, *sequel = NULL;
-    int depth, ch, ch_min, nc = 0;
-    
+    int depth, nc = 0;
+    UC_t ch, ch_min;
+
     if (list_head == NULL)
       return list_head;
     
@@ -72,8 +72,7 @@ inline void get_num_and_lsp(Expand_Node_t const *expand_node, Pat_Num_t *total_s
 {
   Suffix_Node_t *cur_suf;
   Pat_Len_t suf_len, lsp = 255;
-  Pat_Num_t num = 0, i;
-  Char_t *buf, *s;
+  Pat_Num_t num = 0;
   Suffix_Node_t *left, *right;
   
   /* 确定total_suf_num和lsp */
@@ -81,6 +80,7 @@ inline void get_num_and_lsp(Expand_Node_t const *expand_node, Pat_Num_t *total_s
     num++;
     if ((suf_len = strlen(cur_suf->str)) < lsp)
       lsp = suf_len;
+    // assert(suf_len != 0);
   }
   
   *lsp_p = lsp; *total_suf_p = num;
@@ -94,19 +94,6 @@ inline void get_num_and_lsp(Expand_Node_t const *expand_node, Pat_Num_t *total_s
     else {
       left = right; right = left->next; num++;
     }
-
-
-  /* buf = MALLOC(lsp * num, Char_t); */
-  /* num = 0; */
-  /* for (cur_suf = expand_node->next_level; cur_suf; cur_suf = cur_suf->next) { /\* 去重统计 *\/ */
-  /*   for (i = 0, s = buf; i < num && !same_str(s, cur_suf->str, lsp); i++, s += lsp) */
-  /*     ; */
-  /*   if (i == num) { */
-  /*     memcpy(s, cur_suf->str, lsp); */
-  /*     num++; */
-  /*   } */
-  /* } */
-  /* free(buf); */
 
   *dif_prf_p = num;
 }
@@ -138,24 +125,7 @@ Suffix_Node_t *cut_head(Suffix_Node_t *suf_node, Pat_Len_t lsp)
   return suf_node;
 }
 
-/* 有序并去重 */
-void insert_to_expand(Expand_Node_t *expand_node, Suffix_Node_t *suf_node)
-{
-  Suffix_Node_t **next_p = (Suffix_Node_t **) &expand_node->next_level;
-  Suffix_Node_t *cur_suf;
-  int result;
-  
-  while ((cur_suf = *next_p) && (result = strcmp(cur_suf->str, suf_node->str)) < 0)
-    next_p = &cur_suf->next;
-  
-  if (cur_suf == NULL || result > 0) {
-    suf_node->next = cur_suf;
-    *next_p = suf_node;
-  } else  /* 已经存在 */
-    free(suf_node);
-}
-
-inline int same_str(Char_t const *s1, Char_t const *s2, Pat_Len_t len)
+inline Bool_t same_str(Char_t const *s1, Char_t const *s2, Pat_Len_t len)
 {
   while (len && *s1 == *s2) 
     len--, s1++, s2++;
@@ -171,7 +141,7 @@ inline int str_n_cmp(Char_t const *s1, Char_t const *s2, Pat_Len_t len)
   return len == 0 ? 0 : *s1 - *s2;
 }
 
-void print_str(char const *s, Pat_Len_t len, char terminator)
+void print_str(Char_t const *s, Pat_Len_t len, Char_t terminator)
 {
   while (len--)
     putchar(*s++);
@@ -186,3 +156,20 @@ void print_suffix(Suffix_Node_t *cur_suf)
     cur_suf = cur_suf->next;
   }
 }
+
+/* 有序并去重 */
+/* void insert_to_expand(Expand_Node_t *expand_node, Suffix_Node_t *suf_node) */
+/* { */
+/*   Suffix_Node_t **next_p = (Suffix_Node_t **) &expand_node->next_level; */
+/*   Suffix_Node_t *cur_suf; */
+/*   int result; */
+  
+/*   while ((cur_suf = *next_p) && (result = strcmp(cur_suf->str, suf_node->str)) < 0) */
+/*     next_p = &cur_suf->next; */
+  
+/*   if (cur_suf == NULL || result > 0) { */
+/*     suf_node->next = cur_suf; */
+/*     *next_p = suf_node; */
+/*   } else  /\* 已经存在 *\/ */
+/*     free(suf_node); */
+/* } */

@@ -19,17 +19,17 @@ static unsigned power2[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4
 extern Queue_t *queue;
 extern unsigned type_num[];
 
-inline unsigned hash(Char_t const *c, Pat_Len_t len, char power)
+inline Hash_Value_t hash(Char_t const *c, Pat_Len_t len, char power)
 {
-     register unsigned value = SEED;
+     register Hash_Value_t value = SEED;
 
      while (len--)
-	  value ^= (value << L_BITS) + (value >> R_BITS) + *c++;
+       value ^= (value << L_BITS) + (value >> R_BITS) + *((UC_t const *) c++);
   
      return value & (1 << power) - 1;
 }
 
-Hash_Table_t *make_hash_table(Pat_Num_t slots_num, Pat_Len_t lsp, char power)
+Hash_Table_t *make_hash_table(Pat_Num_t slots_num, Pat_Len_t lsp, UC_t power)
 {
      Hash_Table_t *new_hash_table = VMALLOC(Hash_Table_t, Expand_Node_t, slots_num);
      new_hash_table->slots_num = slots_num;
@@ -52,7 +52,7 @@ static Suffix_Node_t ***make_tail(Pat_Num_t slots_num, Expand_Node_t *slot)
 
 void build_hash(Expand_Node_t *expand_node, Pat_Num_t dif_prf_num, Pat_Len_t lsp)  
 {
-  char power;
+  UC_t power;
   Hash_Table_t *hash_table;
   Suffix_Node_t *cur_suf, *next_suf;
   Pat_Num_t slots_num;

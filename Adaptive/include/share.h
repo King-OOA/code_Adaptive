@@ -1,15 +1,16 @@
 #ifndef SHARE_H
 #define SHARE_H
 
-
-typedef unsigned char Char_t;
-typedef unsigned char Pat_Len_t;
+typedef unsigned char UC_t;
+typedef char Char_t;
+typedef UC_t Pat_Len_t;
 typedef unsigned Pat_Num_t;
 typedef char Bool_t;
-typedef char Type_t;
+typedef UC_t Type_t;
+typedef UC_t Flag_t;
+typedef unsigned Hash_Value_t;
 
-
-#define TYPE_NUM    9
+#define TYPE_NUM    8
 #define END         0
 #define ARRAY       1
 #define HASH        2
@@ -17,8 +18,7 @@ typedef char Type_t;
 #define _16_MAP     4
 #define _48_MAP     5
 #define _256_MAP    6
-#define BST         7
-#define _65536_MAP  8
+#define _65536_MAP  7
 
 
 #define PAT_NUM_THRESHOLD 100
@@ -26,6 +26,8 @@ typedef char Type_t;
 #define FALSE 0
 #define MAX_PAT_LEN 256
 #define POINTER_SIZE 8
+#define SMALL_ARRAY_SIZE 20
+
 
 typedef struct expand_node {
   Type_t type;
@@ -40,7 +42,7 @@ typedef struct suffix_node {
 typedef Suffix_Node_t  List_Node_t;
 
 typedef struct str_elmt {
-  Char_t pat_end_flag; /* 第0位标示是否是模式尾, 第1位标示字符串是否内嵌 */
+  Flag_t pat_end_flag; /* 第0位标示是否是模式尾, 第1位标示字符串是否内嵌 */
   union {
     Char_t buf[POINTER_SIZE];
     Char_t *p;
@@ -52,9 +54,9 @@ typedef struct str_elmt {
 void get_num_and_lsp(Expand_Node_t const *expand_node, Pat_Num_t  *total_suf_p, Pat_Num_t *dif_prf_p, Pat_Len_t *lsp_p);
 Suffix_Node_t *cut_head(Suffix_Node_t *suf_node, Pat_Len_t lsp);
 void insert_to_expand(Expand_Node_t *expand_node, Suffix_Node_t *suf_node);
-inline int same_str(Char_t const *s1, Char_t const *s2, Pat_Len_t len);
+inline Bool_t same_str(Char_t const *s1, Char_t const *s2, Pat_Len_t len);
 inline int str_n_cmp(Char_t const *s1, Char_t const *s2, Pat_Len_t len);
-void print_str(char const *s, Pat_Len_t len, char terminator);
+void print_str(Char_t const *s, Pat_Len_t len, Char_t terminator);
 List_Node_t * list_radix_sort(List_Node_t *list_head);
 void remove_duplicate(Suffix_Node_t *suf_list);
 

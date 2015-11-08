@@ -14,14 +14,26 @@
 
 Queue_t *queue;
 unsigned type_num[TYPE_NUM];
-const char *type_name[] = {"","array", "hash", "4 map", "16 map", "48 map", "256 map", "BST", "65536 map"};
+const char *type_name[] =
+{"",
+ "array", "hash",
+ "4 map", "16 map", "48 map",
+ "256 map", "65536 map"};
+
+typedef Expand_Node_t * (* Match_Fun_t)(void *, Char_t const **, Bool_t *);
 
 Expand_Node_t *(*match_fun[]) (void *, Char_t const **, Bool_t *) =
 {
-  NULL, match_array_2, match_hash, match_4_map, match_16_map, match_48_map, match_256_map
+     NULL,
+     (Match_Fun_t) match_array,
+     (Match_Fun_t) match_hash,
+     (Match_Fun_t) match_4_map,
+     (Match_Fun_t) match_16_map,
+     (Match_Fun_t) match_48_map,
+     (Match_Fun_t) match_256_map
 };
 
-Suffix_Node_t *make_suffix_node(char const *pat)
+Suffix_Node_t *make_suffix_node(Char_t const *pat)
 {
      Suffix_Node_t *new_suf_node;
      
@@ -35,7 +47,7 @@ Suffix_Node_t *make_suffix_node(char const *pat)
 static Suffix_Node_t *read_pats(FILE *pats_fp)
 {
      char buf[MAX_PAT_LEN+1]; /*模式串缓存，最大1000个字符，包括换行符*/
-     int pat_len;
+     Pat_Len_t pat_len;
      char *line_break = NULL; /*换行符指针*/
      Suffix_Node_t *list_head = NULL, *new_suf_node = NULL; /* 链表头指针 */
      
@@ -144,9 +156,9 @@ int main(int argc, char **argv)
      Char_t *text_buf;
      Char_t *text_p, *text_end;
      char pat_buf[1000];
-     Pat_Num_t total_suf_num = 0, dif_prf_num = 0;
-     Pat_Len_t lsp = 0; /* 最短模式串长 */
-     int is_pat_end = 0;
+     /* Pat_Num_t total_suf_num = 0, dif_prf_num = 0; */
+     /* Pat_Len_t lsp = 0; /\* 最短模式串长 *\/ */
+     /* int is_pat_end = 0; */
      
      queue = make_queue();
 //     cre_rand_pats("lsp_3", 100, 3, 20, 1, 231);
@@ -155,9 +167,8 @@ int main(int argc, char **argv)
      fprintf(stderr, "\nMaking root..."); fflush(stdout);
      start = clock();
      root = make_root(pats_fp);
-     get_num_and_lsp(root, &total_suf_num, &dif_prf_num, &lsp);
-     printf("total_suf_num: %u, dif_prf_num: %u, lsp: %u\n", total_suf_num, dif_prf_num, lsp);
-     
+     //get_num_and_lsp(root, &total_suf_num, &dif_prf_num, &lsp);
+     //printf("total_suf_num: %u, dif_prf_num: %u, lsp: %u\n", total_suf_num, dif_prf_num, lsp);
      //build_array(root,  dif_prf_num,  lsp);
      //print_array(root->next_level);
      end = clock();
@@ -201,9 +212,7 @@ int main(int argc, char **argv)
 
      for (text_p = text_buf; text_p < text_end; text_p++) {
 	  if (match_round(root, text_p, pat_buf)){
-	       ;
-	       
-	       printf("%ld: %s\n", text_p - text_buf + 1, pat_buf);
+//	       printf("%ld: %s\n", text_p - text_buf + 1, pat_buf);
 	  }
      }
      end = clock();
