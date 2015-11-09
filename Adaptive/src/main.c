@@ -22,18 +22,18 @@ const char *type_name[] =
 
 typedef Expand_Node_t * (* Match_Fun_t)(void *, Char_t const **, Bool_t *);
 
-Expand_Node_t *(*match_fun[]) (void *, Char_t const **, Bool_t *) =
+static Expand_Node_t *(*match_fun[]) (void *, Char_t const **, Bool_t *) =
 {
      NULL,
      (Match_Fun_t) match_array,
      (Match_Fun_t) match_hash,
-     (Match_Fun_t) match_4_map,
-     (Match_Fun_t) match_16_map,
-     (Match_Fun_t) match_48_map,
-     (Match_Fun_t) match_256_map
+     (Match_Fun_t) match_map_4,
+     (Match_Fun_t) match_map_16,
+     (Match_Fun_t) match_map_48,
+     (Match_Fun_t) match_map_256
 };
 
-Suffix_Node_t *make_suffix_node(Char_t const *pat)
+static Suffix_Node_t *make_suffix_node(Char_t const *pat)
 {
      Suffix_Node_t *new_suf_node;
      
@@ -77,7 +77,7 @@ static Expand_Node_t *make_root(FILE *pats_fp)
      return root;
 }
 
-void choose_adaptor(Expand_Node_t *expand_node)
+static void choose_adaptor(Expand_Node_t *expand_node)
 {
      Pat_Num_t total_suf_num, dif_prf_num;
      Pat_Len_t lsp; /* 最短模式串长 */
@@ -98,31 +98,7 @@ void choose_adaptor(Expand_Node_t *expand_node)
   
 }
 
-/* void print_expand(Expand_Node_t *expand_node) */
-/* { */
-/*   switch (expand_node->type) { */
-/*   case HASH: print_hash(expand_node->next_level);break; */
-/*   case _4_MAP: print_4_map(expand_node->next_level);break; */
-/*   case _16_MAP: print_16_map(expand_node->next_level);break; */
-/*   case _48_MAP: print_48_map(expand_node->next_level);break; */
-/*   case _256_MAP: print_256_map(expand_node->next_level);break; */
-/*   case ARRAY : print_leaf(expand_node->next_level); break; */
-/*   } */
-  
-/* } */
-
-/* void match_round(Expand_Node_t *expand_node, char const *text) */
-/* { */
-/*      Expand_Node_t *expand_node; */
-/*      char is_matched = 0; */
-     
-/*      while (expand_node) { */
-/* 	  expand_node =  */
-/*      } */
-
-/* } */
-
-Bool_t match_round(Expand_Node_t *expand_node, Char_t *text, char *pat_buf)
+static Bool_t match_round(Expand_Node_t *expand_node, Char_t *text, char *pat_buf)
 {
   Bool_t is_matched = FALSE, is_pat_end = FALSE;
   Char_t *s = text;
@@ -153,50 +129,56 @@ int main(int argc, char **argv)
      int i;
      size_t file_size;
      clock_t start, end;
-     Char_t *text_buf;
-     Char_t *text_p, *text_end;
-     char pat_buf[1000];
-     /* Pat_Num_t total_suf_num = 0, dif_prf_num = 0; */
-     /* Pat_Len_t lsp = 0; /\* 最短模式串长 *\/ */
-     /* int is_pat_end = 0; */
+     Char_t *text_buf, *text_p, *text_end;;
+     Char_t pat_buf[1000];
+     Bool_t show_match_results = FALSE, show_sta_details = FALSE;
+     Char_t opt;
+     Char_t *text_file_name, *pats_file_name;
      
-     queue = make_queue();
-//     cre_rand_pats("lsp_3", 100, 3, 20, 1, 231);
-     pats_fp = Fopen(argv[1], "r");
-
+     /* 处理命令行参数 */
+     pats_file_name = argv[1];
+     text_file_name = argv[2];
+     if (argc > 3) 
+	  for (argv += 3; *argv && **argv == '-'; argv++) 
+	       while (opt = *++*argv)
+		    switch (opt) {
+		    case 'o' : show_match_results = TRUE; break;
+		    case 's' : show_sta_details = TRUE; break;
+		    default : fprintf(stderr, "非法命令行参数!\n"); exit(EXIT_FAILURE);
+		    }
+     
+     /* 构建root */
+     pats_fp = Fopen(pats_file_name, "r");
      fprintf(stderr, "\nMaking root..."); fflush(stdout);
      start = clock();
      root = make_root(pats_fp);
-     //get_num_and_lsp(root, &total_suf_num, &dif_prf_num, &lsp);
-     //printf("total_suf_num: %u, dif_prf_num: %u, lsp: %u\n", total_suf_num, dif_prf_num, lsp);
-     //build_array(root,  dif_prf_num,  lsp);
-     //print_array(root->next_level);
      end = clock();
-
      fprintf(stderr, "Done!  \n%f\n",
      	     (double) (end - start) / CLOCKS_PER_SEC);
      Fclose(pats_fp);
-
+     
+     /* 预处理,构建自适应匹配结构 */
      fprintf(stderr, "\nConstructing..."); fflush(stdout);
-     start = clock();
+     queue = make_queue();
      in_queue(queue, root);
+     start = clock();
      while (!queue_is_empty(queue))
      	  choose_adaptor(out_queue(queue));
      end = clock();
      fprintf(stderr, "Done!  \n%f\n",
      	     (double) (end - start) / CLOCKS_PER_SEC);
-  
      free_queue(queue);
      
+     /* 打印各种结构的统计信息 */
      for (i = 0; i < TYPE_NUM; i++)
 	  if (type_num[i])
 	       printf("%s: %u\n", type_name[i], type_num[i]);
      //exit(EXIT_SUCCESS);  
 
-/* 读文本 */
+     /* 读文本 */
      fprintf(stderr, "\nLoading text..."); fflush(stdout);
      start = clock();
-     text_fp = Fopen(argv[2], "r");
+     text_fp = Fopen(text_file_name, "r");
      file_size = get_file_size(text_fp);
      text_buf = MALLOC(file_size + 1, Char_t);
      fread(text_buf, file_size, 1, text_fp);
@@ -205,14 +187,15 @@ int main(int argc, char **argv)
      fprintf(stderr, "Done!  \n%f\n",
 	     (double) (end - start) / CLOCKS_PER_SEC);
   
+     /* 匹配文本*/
      fprintf(stderr, "\nMatching..."); fflush(stdout);
      start = clock();
      text_end = text_buf + file_size - 1;
      putchar('\n');
-
+     
      for (text_p = text_buf; text_p < text_end; text_p++) {
-	  if (match_round(root, text_p, pat_buf)){
-//	       printf("%ld: %s\n", text_p - text_buf + 1, pat_buf);
+	  if (match_round(root, text_p, pat_buf) && show_match_results){
+	       printf("%ld: %s\n", text_p - text_buf + 1, pat_buf);
 	  }
      }
      end = clock();
@@ -223,3 +206,23 @@ int main(int argc, char **argv)
 
   /* get_num_and_lsp(root, &total_suf_num, &dif_prf_num, &lsp); */
   /* printf("total: %u, dif: %u, lsp: %d\n", total_suf_num, dif_prf_num, lsp); */
+    /* Pat_Num_t total_suf_num = 0, dif_prf_num = 0; */
+     /* Pat_Len_t lsp = 0; /\* 最短模式串长 *\/ */
+     /* int is_pat_end = 0; */
+      //get_num_and_lsp(root, &total_suf_num, &dif_prf_num, &lsp);
+     //printf("total_suf_num: %u, dif_prf_num: %u, lsp: %u\n", total_suf_num, dif_prf_num, lsp);
+     //build_array(root,  dif_prf_num,  lsp);
+     //print_array(root->next_level);
+
+/* void print_expand(Expand_Node_t *expand_node) */
+/* { */
+/*   switch (expand_node->type) { */
+/*   case HASH: print_hash(expand_node->next_level);break; */
+/*   case _4_MAP: print_4_map(expand_node->next_level);break; */
+/*   case _16_MAP: print_16_map(expand_node->next_level);break; */
+/*   case _48_MAP: print_48_map(expand_node->next_level);break; */
+/*   case _256_MAP: print_256_map(expand_node->next_level);break; */
+/*   case ARRAY : print_leaf(expand_node->next_level); break; */
+/*   } */
+  
+/* } */
