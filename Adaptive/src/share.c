@@ -8,7 +8,7 @@
 #define ALPHABET_SIZE 256
 #define STACK_SIZE 1000000
 
-struct stack_item {
+static struct stack_item {
     List_Node_t *head, *tail;
     int dep;
 } stack[STACK_SIZE], *sp = stack;

@@ -29,44 +29,32 @@ void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_le
   Str_Elmt_t *str_elmt = str_array->array;
   Pat_Num_t n = str_num;
 
-  if (str_len > POINTER_SIZE) { /* 节点外 */
-    while (n--) (str_elmt++)->str.p = MALLOC(str_len, Char_t); /* 为每个节点,在节点外分配空间 */
-    
-    /* 把第一个字符串拷入数组的第一个元素 */
-    str_elmt = str_array->array;
-    memcpy(str_elmt->str.p, ((Suffix_Node_t *) expand_node->next_level)->str, str_len);
-    next_p = (Suffix_Node_t **) &str_elmt->expand_node.next_level;
-    
-    for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) {
-      next_suf = cur_suf->next;
-      if (!same_str(str_elmt->str.p, cur_suf->str, str_len)) { /* 如果遇到新的不相等的字符串 */
-	memcpy((++str_elmt)->str.p, cur_suf->str, str_len);
-	*next_p = NULL;	next_p = (Suffix_Node_t **) &str_elmt->expand_node.next_level; /*原链表终止, 指向新链表头 */
-      }
-
-      if (cur_suf = cut_head(cur_suf, str_len)) { 
-	*next_p = cur_suf; next_p = &cur_suf->next;
-      } else
-	str_elmt->pat_end_flag = 1;
-    }
-  } else {			/* 节点内 */
-    memcpy(str_elmt->str.buf, ((Suffix_Node_t *) expand_node->next_level)->str, str_len);
-    next_p = (Suffix_Node_t **) &str_elmt->expand_node.next_level;
-
-    for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) {
-      next_suf = cur_suf->next; 
-      if (!same_str(str_elmt->str.buf, cur_suf->str, str_len)) {
-	memcpy((++str_elmt)->str.buf, cur_suf->str, str_len);
-	*next_p = NULL; next_p = (Suffix_Node_t **) &str_elmt->expand_node.next_level;
-      }
-
-      if (cur_suf = cut_head(cur_suf, str_len)) {
-	*next_p = cur_suf; next_p = &cur_suf->next;
-      } else
-	str_elmt->pat_end_flag = 1;
-    }
+#define BUILD_ARRAY(pointer)                                                                   \
+  str_elmt = str_array->array;        /* 把第一个字符串拷入数组的第一个元素 */                   \
+  memcpy(str_elmt->str.pointer, ((Suffix_Node_t *) expand_node->next_level)->str, str_len);    \
+  next_p = (Suffix_Node_t **) &str_elmt->expand_node.next_level;                               \
+                                                                                               \
+  for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) {                       \
+    next_suf = cur_suf->next;                                                                  \
+    if (!same_str(str_elmt->str.pointer, cur_suf->str, str_len)) {                             \
+      memcpy((++str_elmt)->str.pointer, cur_suf->str, str_len); /*原链表终止, 指向新链表头 */   \
+      *next_p = NULL;	next_p = (Suffix_Node_t **) &str_elmt->expand_node.next_level;         \
+    }                                                                                          \
+                                                                                               \
+    if (cur_suf = cut_head(cur_suf, str_len)) {                                                \
+      *next_p = cur_suf; next_p = &cur_suf->next;                                              \
+    } else                                                                                     \
+      str_elmt->pat_end_flag = 1;                                                              \
   }
 
+
+  if (str_len > POINTER_SIZE) { /* 节点外 */
+    while (n--) (str_elmt++)->str.p = MALLOC(str_len, Char_t); /* 为每个节点,在节点外分配空间 */
+    BUILD_ARRAY(p);
+  } else {
+    BUILD_ARRAY(buf);
+  }
+  
   expand_node->next_level = str_array;
   expand_node->type = ARRAY;
   type_num[ARRAY]++;
@@ -87,16 +75,16 @@ inline static Expand_Node_t *ordered_match(Str_Array_t *str_array, Char_t const 
      Str_Elmt_t *str_elmt;
      int result;
 
+#define ORDERED_MATCH(pointer)                                                    \
+     for (str_num = str_array->str_num, str_elmt = str_array->array;	          \
+	  str_num && (result = str_n_cmp(str_elmt->str.pointer, s, str_len)) < 0; \
+	  str_num--, str_elmt++)                                                  \
+     ;
+     
      if (str_len > POINTER_SIZE)  /* 节点外 */
-	  for (str_num = str_array->str_num, str_elmt = str_array->array;
-	       str_num && (result = str_n_cmp(str_elmt->str.p, s, str_len)) < 0;
-	       str_num--, str_elmt++)
-	       ;
+       ORDERED_MATCH(p)
      else 			/* 节点内 */
-	  for (str_num = str_array->str_num, str_elmt = str_array->array;
-	       str_num && (result = str_n_cmp(str_elmt->str.buf, s, str_len)) < 0;
-	       str_num--, str_elmt++)
-	       ;
+       ORDERED_MATCH(buf)
 
      if (str_num == 0 || result > 0) 	/* 没找到 */
 	  return NULL;
@@ -112,37 +100,28 @@ inline static Expand_Node_t *binary_match(Str_Array_t *str_array, Char_t const *
 {
   int low = 0, high = str_array->str_num - 1, mid;
   Str_Elmt_t *array = str_array->array;
-  Char_t const *s = *text;
   Pat_Len_t str_len = str_array->str_len;
+  Char_t const *s = *text;
   int result;
-  
+
+#define BINARY_MATCH(pointer)                                               \
+  while (low <= high) {				                            \
+      mid = (low + high) >> 1;                                              \
+      if ((result = str_n_cmp(s, array[mid].str.pointer, str_len)) == 0) {  \
+	*is_pat_end = array[mid].pat_end_flag;                              \
+	*text += str_len;                                                   \
+	return &array[mid].expand_node;                                     \
+      } else if (result < 0)                                                \
+	high = mid - 1;                                                     \
+      else 								    \
+	low = mid + 1;                                                      \
+    }
+
   if (str_len > POINTER_SIZE) 
-    while (low <= high) {
-      mid = (low + high) >> 1;
-
-      if ((result = str_n_cmp(s, array[mid].str.p, str_len)) == 0) {
-	*is_pat_end = array[mid].pat_end_flag;
-	*text += str_len;
-	return &array[mid].expand_node;
-      } else if (result < 0)
-	high = mid - 1;
-      else
-	low = mid + 1;
-    }
+    BINARY_MATCH(p)
   else  			/* 节点内 */
-    while (low <= high) {
-      mid = (low + high) >> 1;
-
-      if ((result = str_n_cmp(s, array[mid].str.buf, str_len)) == 0) {
-	*is_pat_end = array[mid].pat_end_flag;
-	*text += str_len;
-	return &array[mid].expand_node;
-      } else if (result < 0)
-	high = mid - 1;
-      else
-	low = mid + 1;
-    }
-
+    BINARY_MATCH(buf)
+  
   return NULL;
 }
 
@@ -160,23 +139,20 @@ void print_array(Str_Array_t *str_array)
   Str_Elmt_t *str_elmt;
   Pat_Len_t str_len = str_array->str_len;
   Pat_Num_t n;
+  
+#define PRINT_ARRAY(pointer)                                                       \
+  for (str_elmt = str_array->array, n = str_array->str_num; n; str_elmt++, n--) {  \
+    print_str(str_elmt->str.pointer, str_len,  ':');                               \
+    if (str_elmt->pat_end_flag)                                                    \
+      putchar('*');                                                                \
+    putchar('\n');                                                                 \
+    print_suffix(str_elmt->expand_node.next_level);                                \
+  }
 
   if (str_len > POINTER_SIZE)
-    for (str_elmt = str_array->array, n = str_array->str_num; n; str_elmt++, n--) {
-      print_str(str_elmt->str.p, str_len,  ':');
-      if (str_elmt->pat_end_flag)
-	putchar('*');
-      putchar('\n');
-      print_suffix(str_elmt->expand_node.next_level);
-    }
+    PRINT_ARRAY(p)
   else
-    for (str_elmt = str_array->array, n = str_array->str_num; n; str_elmt++, n--) {
-      print_str(str_elmt->str.buf, str_len,  ':');
-      if (str_elmt->pat_end_flag)
-	putchar('*');
-      putchar('\n');
-      print_suffix(str_elmt->expand_node.next_level);
-    }
+    PRINT_ARRAY(buf)
 }
 
 /* void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_len) */

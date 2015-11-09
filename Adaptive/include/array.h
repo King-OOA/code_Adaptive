@@ -1,5 +1,5 @@
-#ifndef LEAF_H
-#define LEAF_H
+#ifndef ARRAY_H
+#define ARRAY_H
 
 #include "share.h"
 

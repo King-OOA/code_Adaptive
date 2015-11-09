@@ -19,6 +19,7 @@ static unsigned power2[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4
 extern Queue_t *queue;
 extern unsigned type_num[];
 
+
 inline Hash_Value_t hash(Char_t const *c, Pat_Len_t len, char power)
 {
      register Hash_Value_t value = SEED;
@@ -72,7 +73,6 @@ void build_hash(Expand_Node_t *expand_node, Pat_Num_t dif_prf_num, Pat_Len_t lsp
     hash_value = hash(cur_suf->str, lsp, power);
     *tail[hash_value] = cur_suf;
     tail[hash_value] = &cur_suf->next;
-    //insert_to_expand(hash_table->slots + hash(cur_suf->str, lsp, power), cur_suf); /* 不用cut_head,原样插入 */
   }
 	
   expand_node->next_level = hash_table;
@@ -84,6 +84,30 @@ void build_hash(Expand_Node_t *expand_node, Pat_Num_t dif_prf_num, Pat_Len_t lsp
   for (slots_num = hash_table->slots_num, slot = hash_table->slots; slots_num; slot++, slots_num--)
     if (slot->next_level)
       in_queue(queue, slot);
+}
+
+/* Hash表只能确定一定不匹配的串,可能匹配的串需要由对应expand node的下一级来进一步判断 */
+Expand_Node_t *match_hash(Hash_Table_t *hash_table, Char_t const **text, Bool_t *is_pat_end)
+{
+  Char_t const *s = *text;
+  Expand_Node_t *slot = hash_table->slots + hash(s, hash_table->lsp, hash_table->power);
+  
+  return slot->next_level == NULL ? NULL : slot;
+}
+
+void print_hash(Hash_Table_t *hash_table)
+{
+    Expand_Node_t *slot = hash_table->slots;
+    Pat_Num_t i;
+    Pat_Num_t slots_num = hash_table->slots_num;
+    Pat_Len_t lsp = hash_table->lsp;
+     
+    printf("Hashing@ slots number: %u, lsp: %u\n", slots_num, lsp);
+    for (i = 0; i < slots_num; slot++, i++)
+      if (slot->next_level) {
+    	printf("slot num: %u\n", i);
+    	print_suffix(slot->next_level);
+      }
 }
 
 /* void build_hash(Expand_Node_t *expand_node, Pat_Num_t dif_prf_num, Pat_Len_t lsp)   */
@@ -149,29 +173,3 @@ void build_hash(Expand_Node_t *expand_node, Pat_Num_t dif_prf_num, Pat_Len_t lsp
 /* 	  if (coli_elmt->expand_node.next_level) */
 /* 	    in_queue(queue, &coli_elmt->expand_node); */
 /*   } */
-
-/* hash表只能确定一定不匹配的串,可能匹配的串需要由对应expand node的下一级来进一步判断 */
-
-/* 只能判断一定不匹配,将文本映射到相应哈希槽所对应的结构中,然后由该结构来进一步判断 */
-Expand_Node_t *match_hash(Hash_Table_t *hash_table, Char_t const **text, Bool_t *is_pat_end)
-{
-  Char_t const *s = *text;
-  Expand_Node_t *slot = hash_table->slots + hash(s, hash_table->lsp, hash_table->power);
-  
-  return slot->next_level == NULL ? NULL : slot;
-}
-
-void print_hash(Hash_Table_t *hash_table)
-{
-    Expand_Node_t *slot = hash_table->slots;
-    Pat_Num_t i;
-    Pat_Num_t slots_num = hash_table->slots_num;
-    Pat_Len_t lsp = hash_table->lsp;
-     
-    printf("Hashing@ slots number: %u, lsp: %u\n", slots_num, lsp);
-    for (i = 0; i < slots_num; slot++, i++)
-      if (slot->next_level) {
-    	printf("slot num: %u\n", i);
-    	print_suffix(slot->next_level);
-      }
-}

@@ -14,11 +14,11 @@ typedef unsigned Hash_Value_t;
 #define END         0
 #define ARRAY       1
 #define HASH        2
-#define _4_MAP      3
-#define _16_MAP     4
-#define _48_MAP     5
-#define _256_MAP    6
-#define _65536_MAP  7
+#define MAP_4       3
+#define MAP_16      4
+#define MAP_48      5
+#define MAP_256     6
+#define MAP_65536   7
 
 
 #define PAT_NUM_THRESHOLD 100

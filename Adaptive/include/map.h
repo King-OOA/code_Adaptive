@@ -3,40 +3,40 @@
 
 #include "share.h"
 
-typedef struct _4_map {
+typedef struct map_4 {
   char dif_ch_num; /* 最大为4 */
   Char_t keys[4];
   Expand_Node_t expand_nodes[4];
   Flag_t pat_end_flag[1];
-} _4_Map_t;
+} Map_4_t;
 
-typedef struct _16_map {
+typedef struct map_16 {
   char dif_ch_num; /* 最大为16 */
   Char_t keys[16];
   Expand_Node_t expand_nodes[16];
   Flag_t pat_end_flag[16/8];
-} _16_Map_t;
+} Map_16_t;
 
-typedef struct _48_map {
+typedef struct map_48 {
   char index[256]; /* 非法索引值用-1表示 */
   Expand_Node_t expand_nodes[48];
   Flag_t pat_end_flag[48/8];
-} _48_Map_t;
+} Map_48_t;
 
-typedef struct _256_map{
+typedef struct map_256{
   Flag_t pat_end_flag[256/8];
   Expand_Node_t expand_nodes[256];
-} _256_Map_t;
+} Map_256_t;
 
 void build_map(Expand_Node_t *expand_node, Pat_Num_t dif_ch_num);
-Expand_Node_t *match_4_map(_4_Map_t *_4_map, Char_t const **text, Bool_t *is_pat_end);
-Expand_Node_t *match_16_map(_16_Map_t *_16_map, Char_t const **text, Bool_t *is_pat_end);
-Expand_Node_t *match_48_map(_48_Map_t *_48_map, Char_t const **text, Bool_t *is_pat_end);
-Expand_Node_t *match_256_map(_256_Map_t *_256_map, Char_t const **text, Bool_t *is_pat_end);
+Expand_Node_t *match_map_4(Map_4_t *map_4, Char_t const **text, Bool_t *is_pat_end);
+Expand_Node_t *match_map_16(Map_16_t *map_16, Char_t const **text, Bool_t *is_pat_end);
+Expand_Node_t *match_map_48(Map_48_t *map_48, Char_t const **text, Bool_t *is_pat_end);
+Expand_Node_t *match_map_256(Map_256_t *map_256, Char_t const **text, Bool_t *is_pat_end);
 
-void print_4_map(_4_Map_t *_4_map);
-void print_16_map(_16_Map_t *_16_map);
-void print_48_map(_48_Map_t *_48_map);
-void print_256_map(_256_Map_t *_256_map);
+void print_4_map(Map_4_t *map_4);
+void print_16_map(Map_16_t *map_16);
+void print_48_map(Map_48_t *map_48);
+void print_256_map(Map_256_t *map_256);
 
 #endif 
