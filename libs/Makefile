@@ -6,12 +6,13 @@ vpath %.c ./src
 vpath %.so ./so
 
 #OBJS := #$(patsubst ./_c/%.c, %.o, $(wildcard *.c))
-OBJS = main.o common.o textools.o makedata.o binary.o stack.o queue.o  BST.o lists.o
+
+OBJS = main.o common.o textools.o makedata.o binary.o stack.o queue.o  BST.o lists.o sorter.o
 SOS = libcommon.so libtextools.so libmakedata.so libADT.so libbinary.so
 SOPATH = /home/pz/code/libs/so
 INCLUDE = ./include
 
-ADTS = stack.o queue.o BST.o lists.o
+ADTS = stack.o queue.o BST.o lists.o sorter.o
 
 a.out: main.o $(SOS) 
 	gcc $< -L$(SOPATH) -ltextools -lmakedata -lADT  -lbinary -lcommon -lm
@@ -52,7 +53,8 @@ BST.o: BST.c BST.h
 	gcc $(CFLAGS) $< -o $@
 lists.o: lists.c lists.h
 	gcc $(CFLAGS) $< -o $@
-
+sorter.o : sorter.c sorter.h share.h
+	gcc $(CFLAGS) $< -I../Adaptive/include -o $@		
 
 
 .PHONY: ra ro rso

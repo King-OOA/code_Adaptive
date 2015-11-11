@@ -11,6 +11,7 @@
 #include "queue.h"
 #include "array.h"
 #include "map.h"
+#include "sorter.h"
 
 Queue_t *queue;
 unsigned type_num[TYPE_NUM];
@@ -90,10 +91,10 @@ static void choose_adaptor(Expand_Node_t *expand_node)
      if (lsp == 1)
 	  build_map(expand_node, dif_prf_num);
      else {
-	  if (dif_prf_num <= 100)
-	       build_array(expand_node, dif_prf_num, lsp);
-	  else
+	  if (dif_prf_num > 50)
 	       build_hash(expand_node, dif_prf_num, lsp);
+	  else
+	       build_array(expand_node, dif_prf_num, lsp);
      }
   
 }
@@ -147,18 +148,14 @@ int main(int argc, char **argv)
 		    default : fprintf(stderr, "非法命令行参数!\n"); exit(EXIT_FAILURE);
 		    }
      
-     /* 构建root */
+
+     /* 预处理,构建自适应匹配结构 */
      pats_fp = Fopen(pats_file_name, "r");
-     fprintf(stderr, "\nMaking root..."); fflush(stdout);
+     fprintf(stderr, "\nConstructing adaptive matching structure..."); fflush(stdout);
      start = clock();
-     root = make_root(pats_fp);
-     end = clock();
-     fprintf(stderr, "Done!  \n%f\n",
-     	     (double) (end - start) / CLOCKS_PER_SEC);
+     root = make_root(pats_fp);	/* 构建根节点 */
      Fclose(pats_fp);
      
-     /* 预处理,构建自适应匹配结构 */
-     fprintf(stderr, "\nConstructing..."); fflush(stdout);
      queue = make_queue();
      in_queue(queue, root);
      start = clock();

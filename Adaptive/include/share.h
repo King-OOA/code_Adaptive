@@ -39,7 +39,6 @@ typedef struct suffix_node {
   Char_t str[];
 } Suffix_Node_t;
 
-typedef Suffix_Node_t  List_Node_t;
 
 typedef struct str_elmt {
   Flag_t pat_end_flag; /* 第0位标示是否是模式尾, 第1位标示字符串是否内嵌 */
@@ -50,14 +49,13 @@ typedef struct str_elmt {
   Expand_Node_t expand_node;
 } Str_Elmt_t;
 
-
 void get_num_and_lsp(Expand_Node_t const *expand_node, Pat_Num_t  *total_suf_p, Pat_Num_t *dif_prf_p, Pat_Len_t *lsp_p);
 Suffix_Node_t *cut_head(Suffix_Node_t *suf_node, Pat_Len_t lsp);
 void insert_to_expand(Expand_Node_t *expand_node, Suffix_Node_t *suf_node);
 inline Bool_t same_str(Char_t const *s1, Char_t const *s2, Pat_Len_t len);
 inline int str_n_cmp(Char_t const *s1, Char_t const *s2, Pat_Len_t len);
 void print_str(Char_t const *s, Pat_Len_t len, Char_t terminator);
-List_Node_t * list_radix_sort(List_Node_t *list_head);
+
 void remove_duplicate(Suffix_Node_t *suf_list);
 
 void print_suffix(Suffix_Node_t *cur_suf);
