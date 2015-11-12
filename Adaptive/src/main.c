@@ -15,19 +15,25 @@
 
 Queue_t *queue;
 unsigned type_num[TYPE_NUM];
+extern unsigned ch_num[];
+extern unsigned array_len[];
+
+
 static const char *type_name[] =
 {"",
- "array", "hash",
- "4 map", "16 map", "48 map",
- "256 map", "65536 map"};
+ "single str", "array", "hash",
+ "map 1", "map 4", "map 16", "map 48",
+ "map 256", "map 65536" };
 
 typedef Expand_Node_t * (* Match_Fun_t)(void *, Char_t const **, Bool_t *);
 
 static Expand_Node_t *(*match_fun[]) (void *, Char_t const **, Bool_t *) =
 {
      NULL,
+     (Match_Fun_t) match_single_str,
      (Match_Fun_t) match_array,
      (Match_Fun_t) match_hash,
+     (Match_Fun_t) match_map_1,
      (Match_Fun_t) match_map_4,
      (Match_Fun_t) match_map_16,
      (Match_Fun_t) match_map_48,
@@ -80,23 +86,24 @@ static Expand_Node_t *make_root(FILE *pats_fp)
 
 static void choose_adaptor(Expand_Node_t *expand_node)
 {
-     Pat_Num_t total_suf_num, dif_prf_num;
-     Pat_Len_t lsp; /* 最短模式串长 */
+  Pat_Num_t total_suf_num, dif_prf_num;
+  Pat_Len_t lsp; /* 最短模式串长 */
      
-     get_num_and_lsp(expand_node, &total_suf_num, &dif_prf_num, &lsp);
-     //printf("%d\n", dif_prf_num);
+  get_num_and_lsp(expand_node, &total_suf_num, &dif_prf_num, &lsp);
+  //printf("%d\n", dif_prf_num);
   
-     //exit(EXIT_SUCCESS);  
+  //exit(EXIT_SUCCESS);  
  
-     if (lsp == 1)
-	  build_map(expand_node, dif_prf_num);
-     else {
-	  if (dif_prf_num > 50)
-	       build_hash(expand_node, dif_prf_num, lsp);
-	  else
-	       build_array(expand_node, dif_prf_num, lsp);
-     }
-  
+  if (lsp == 1)
+    build_map(expand_node, dif_prf_num);
+  else {
+    if (dif_prf_num == 1)
+         build_single_str(expand_node, lsp);
+    else if (dif_prf_num < NUM_TO_BUILD_ARRAY)
+      build_array(expand_node, dif_prf_num, lsp);
+    else
+      build_hash(expand_node, dif_prf_num, lsp);
+  }
 }
 
 static Bool_t match_round(Expand_Node_t *expand_node, Char_t *text, char *pat_buf)
@@ -106,7 +113,10 @@ static Bool_t match_round(Expand_Node_t *expand_node, Char_t *text, char *pat_bu
   Pat_Len_t pat_len;
   
   while (expand_node && expand_node->type != END) {
-    expand_node = match_fun[expand_node->type](expand_node->next_level, &s, &is_pat_end);
+    if (expand_node->type == SINGLE_STR)
+      expand_node = match_single_str(expand_node->next_level, &s, &is_pat_end);
+    else
+      expand_node = match_fun[expand_node->type](expand_node->next_level, &s, &is_pat_end);
  
    if (is_pat_end) {
       is_matched = TRUE;
@@ -121,6 +131,30 @@ static Bool_t match_round(Expand_Node_t *expand_node, Char_t *text, char *pat_bu
   *pat_buf = '\0';
   
   return is_matched;
+}
+
+void print_statistics(Bool_t show_details)
+{
+  int i;
+  
+  /* 打印各种结构的统计信息 */
+  for (i = 0; i < TYPE_NUM; i++)
+    if (type_num[i])
+      printf("%s: %u\n", type_name[i], type_num[i]);
+
+  if (show_details) {
+    printf("diferent sigle char num:\n");
+    for (i = 0; i < 256; i++)
+      if (ch_num[i])
+	printf("%d: %u\n", i, ch_num[i]);
+  
+    printf("array len distribution:\n");
+    for (i = 1; i < NUM_TO_BUILD_ARRAY; i++)
+      if (array_len[i])
+	printf("%d: %u\n", i, array_len[i]);
+}
+
+  
 }
 
 int main(int argc, char **argv)
@@ -166,16 +200,12 @@ int main(int argc, char **argv)
      	     (double) (end - start) / CLOCKS_PER_SEC);
      free_queue(queue);
      
-     /* 打印各种结构的统计信息 */
-     for (i = 0; i < TYPE_NUM; i++)
-	  if (type_num[i])
-	       printf("%s: %u\n", type_name[i], type_num[i]);
-     //exit(EXIT_SUCCESS);  
+     print_statistics(show_sta_details); /* 打印各种结构的统计信息 */
 
      /* 读文本 */
      fprintf(stderr, "\nLoading text..."); fflush(stdout);
      start = clock();
-     text_fp = Fopen(text_file_name, "r");
+     text_fp = Fopen(text_file_name, "rb");
      file_size = get_file_size(text_fp);
      text_buf = MALLOC(file_size + 1, Char_t);
      fread(text_buf, file_size, 1, text_fp);

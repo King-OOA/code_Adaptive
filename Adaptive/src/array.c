@@ -11,6 +11,8 @@
 extern Queue_t *queue;
 extern Pat_Num_t type_num[];
 
+unsigned array_len[NUM_TO_BUILD_ARRAY];
+
 static Str_Array_t *make_array(Pat_Num_t str_num, Pat_Len_t str_len)
 {
      Str_Array_t *new_array = VMALLOC(Str_Array_t, Str_Elmt_t, str_num);
@@ -29,23 +31,25 @@ void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_le
   Str_Elmt_t *str_elmt = str_array->array;
   Pat_Num_t n = str_num;
 
-#define BUILD_ARRAY(pointer)                                                                   \
-  str_elmt = str_array->array;        /* 把第一个字符串拷入数组的第一个元素 */                   \
-  memcpy(str_elmt->str.pointer, ((Suffix_Node_t *) expand_node->next_level)->str, str_len);    \
-  next_p = (Suffix_Node_t **) &str_elmt->expand_node.next_level;                               \
-                                                                                               \
-  for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) {                       \
-    next_suf = cur_suf->next;                                                                  \
-    if (!same_str(str_elmt->str.pointer, cur_suf->str, str_len)) {                             \
-      memcpy((++str_elmt)->str.pointer, cur_suf->str, str_len); /*原链表终止, 指向新链表头 */   \
-      *next_p = NULL;	next_p = (Suffix_Node_t **) &str_elmt->expand_node.next_level;         \
-    }                                                                                          \
-                                                                                               \
-    if (cur_suf = cut_head(cur_suf, str_len)) {                                                \
-      *next_p = cur_suf; next_p = &cur_suf->next;                                              \
-    } else                                                                                     \
-      str_elmt->pat_end_flag = 1;                                                              \
-  }
+#define BUILD_ARRAY(pointer)						\
+  str_elmt = str_array->array;        /* 把第一个字符串拷入数组的第一个元素 */ \
+  memcpy(str_elmt->str.pointer, ((Suffix_Node_t *) expand_node->next_level)->str, str_len); \
+  next_p = (Suffix_Node_t **) &str_elmt->expand_node.next_level;	\
+									\
+  for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) { \
+    next_suf = cur_suf->next;						\
+    if (!same_str(str_elmt->str.pointer, cur_suf->str, str_len)) {	\
+      memcpy((++str_elmt)->str.pointer, cur_suf->str, str_len); /*原链表终止, 指向新链表头 */ \
+      *next_p = NULL;	next_p = (Suffix_Node_t **) &str_elmt->expand_node.next_level; \
+    }									\
+									\
+    if (cur_suf = cut_head(cur_suf, str_len)) {				\
+      *next_p = cur_suf; next_p = &cur_suf->next;			\
+    } else								\
+      str_elmt->pat_end_flag = TRUE;					\
+  }									\
+									\
+  *next_p = NULL;
 
 
   if (str_len > POINTER_SIZE) { /* 节点外 */
@@ -57,13 +61,59 @@ void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_le
   
   expand_node->next_level = str_array;
   expand_node->type = ARRAY;
+
+#if DEBUG
   type_num[ARRAY]++;
-     
+  array_len[str_array->str_num]++;
+#endif
+  
   /* 加入到队列 */
   for (str_elmt = str_array->array; str_num; str_elmt++, str_num--)
     if (suf_list = str_elmt->expand_node.next_level) {
       in_queue(queue, &str_elmt->expand_node);
     }
+}
+
+void build_single_str(Expand_Node_t *expand_node, Pat_Len_t str_len)
+{
+  Suffix_Node_t *cur_suf, *next_suf, **next_p;
+  Single_Str_t *single_str = VMALLOC(Single_Str_t, Char_t, str_len);
+  
+  cur_suf = expand_node->next_level;
+  memcpy(single_str->str, cur_suf->str, str_len);
+  next_p = (Suffix_Node_t **) &single_str->expand_node.next_level;
+
+  for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) {
+    next_suf = cur_suf->next;
+    if (cur_suf = cut_head(cur_suf, str_len)) {
+      *next_p = cur_suf; next_p = &cur_suf->next;
+    } else
+      single_str->is_pat_end = TRUE;
+  }
+  
+  *next_p = NULL;
+
+  expand_node->next_level = single_str;
+  expand_node->type = SINGLE_STR;
+
+  
+#if DEBUG
+  type_num[SINGLE_STR]++;
+#endif
+
+  if (single_str->expand_node.next_level)
+    in_queue(queue, &single_str->expand_node);
+}
+ 
+inline Expand_Node_t *match_single_str(Single_Str_t *single_str, Char_t const **text, Bool_t *is_pat_end)
+{
+  if (!same_str(single_str->str, *text, single_str->str_len))
+    return NULL;
+  
+  *is_pat_end = single_str->is_pat_end;
+  *text += single_str->str_len;
+  
+  return &single_str->expand_node;
 }
 
 /*有序查找*/

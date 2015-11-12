@@ -7,7 +7,7 @@ INCLUDE_2 = /home/pz/code/Adaptive/include
 vpath %.h $(INCLUDE_1) $(INCLUDE_2)
 vpath %.c ./src/
 
-CFLAGS = -Wall -c -O3 -I$(INCLUDE_1) -I$(INCLUDE_2)
+CFLAGS = -Wall -c -g -I$(INCLUDE_1) -I$(INCLUDE_2)
 
 a.out:  $(OBJS)
 	gcc $(OBJS) -L$(LIBPATH) -lADT -lmakedata -lcommon  -lm -lbinary -ltextools

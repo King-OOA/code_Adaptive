@@ -19,7 +19,7 @@ void cut_file(char const *iname, int n)
 	exit(EXIT_FAILURE);
     }
 
-    ifile = Fopen(iname,"r");
+    ifile = Fopen(iname,"rb");
     sprintf(oname,"%s.%iMB",iname,n);     /* 输出文件名, 和输入文件同属一个目录*/
     ofile = Fopen(oname,"w");
     
@@ -65,7 +65,7 @@ int get_file_alphabet(char const *filename)
     int i, n;
     FILE *ifile;
     size_t sigma[256] = {0};
-    ifile = Fopen(filename,"r");
+    ifile = Fopen(filename,"rb");
     
     /* 分块读取文件, 并累加各字符数 */
     while (n = fread(buf, 1, 1024*1024, ifile))

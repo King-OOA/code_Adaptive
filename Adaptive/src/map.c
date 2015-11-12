@@ -11,8 +11,35 @@
 
 extern Queue_t *queue;
 extern unsigned type_num[];
+unsigned ch_num[256];
 
-#define BUILD_N_MAP
+
+
+static void build_map_1(Expand_Node_t *expand_node)
+{
+    Suffix_Node_t *cur_suf, *next_suf, **next_p;
+    Map_1_t *map_1 = CALLOC(1, Map_1_t);
+    
+    cur_suf = expand_node->next_level;
+    map_1->key = *cur_suf->str;
+    next_p = (Suffix_Node_t **) &map_1->expand_node.next_level;
+    
+    for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) {
+      next_suf = cur_suf->next;
+      if (cur_suf = cut_head(cur_suf, 1)) {
+	*next_p = cur_suf; next_p = &cur_suf->next;
+      } else
+	map_1->pat_end_flag = TRUE;
+    }
+    
+    *next_p = NULL;
+
+    expand_node->next_level = map_1;
+    expand_node->type = MAP_1;
+
+    if (map_1->expand_node.next_level)
+      in_queue(queue, &map_1->expand_node);
+}
 
 #define BUILD_MAP_4_OR_16(n)						\
 									\
@@ -47,13 +74,13 @@ static void build_map_##n(Expand_Node_t *expand_node, Pat_Num_t dif_ch_num) \
       set_bit(map_##n->pat_end_flag, i); /* 是模式尾 */			\
   }									\
 									\
+  *next_p = NULL;                                                       \
   expand_node->next_level = map_##n;					\
   expand_node->type = MAP_##n;						\
-  type_num[MAP_##n]++;							\
 									\
   for (i = 0; i < dif_ch_num; i++) /* 加入到队列 */			\
     if (expand_nodes_##n[i].next_level)					\
-      in_queue(queue, expand_nodes_##n + i);				\
+      in_queue(queue, expand_nodes_##n + i);                            \
 }
 
 BUILD_MAP_4_OR_16(4)
@@ -89,11 +116,11 @@ static void build_map_48(Expand_Node_t *expand_node, Pat_Num_t dif_ch_num)
     } else  /* 模式串尾 */
       set_bit(map_48->pat_end_flag, i);
   }
-
+  
+  *next_p = NULL;
   expand_node->next_level = map_48;
   expand_node->type = MAP_48;
-  type_num[MAP_48]++;
-  
+
   for (i = 0; i < dif_ch_num; i++)
     if (expand_nodes_48[i].next_level)
       in_queue(queue, expand_nodes_48 + i);
@@ -125,9 +152,9 @@ static void build_map_256(Expand_Node_t *expand_node)
       set_bit(map_256->pat_end_flag, ch);
   }
   
+  *next_p = NULL;
   expand_node->next_level = map_256;
   expand_node->type = MAP_256;
-  type_num[MAP_256]++;
 
   for (n = 256, expand_node = map_256->expand_nodes; n; expand_node++, n--)
     if (expand_node->next_level)
@@ -136,14 +163,47 @@ static void build_map_256(Expand_Node_t *expand_node)
 
 void build_map(Expand_Node_t *expand_node, Pat_Num_t dif_ch_num)
 {
-  if (dif_ch_num <= 4)
+#if DEBUG  
+  ch_num[dif_ch_num]++;
+#endif   
+  
+  if (dif_ch_num == 1) {
+    build_map_1(expand_node);
+#if DEBUG
+    type_num[MAP_1]++;
+#endif     
+  } else if (dif_ch_num <= 4) {
     build_map_4(expand_node, dif_ch_num);
-  else if (dif_ch_num <= 16)
+#if DEBUG
+    type_num[MAP_4]++;
+#endif     
+  } else if (dif_ch_num <= 16) {
     build_map_16(expand_node, dif_ch_num);
-  else if (dif_ch_num <= 48)
+#if DEBUG
+    type_num[MAP_16]++;
+#endif     
+  } else if (dif_ch_num <= 48) {
     build_map_48(expand_node, dif_ch_num);
-  else
+#if DEBUG
+    type_num[MAP_48]++;
+#endif     
+  } else {
     build_map_256(expand_node);
+#if DEBUG
+    type_num[MAP_256]++;
+#endif     
+  }
+}
+
+Expand_Node_t *match_map_1(Map_1_t *map_1, Char_t const **text, Bool_t *is_pat_end)
+{
+  if (**text != map_1->key)
+    return NULL;
+    
+  *is_pat_end = map_1->pat_end_flag;
+  (*text)++;
+
+  return &map_1->expand_node;
 }
 
 Expand_Node_t *match_map_4(Map_4_t *map_4, Char_t const **text, Bool_t *is_pat_end)

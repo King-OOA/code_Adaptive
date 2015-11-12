@@ -212,7 +212,7 @@ void extract_pats(char const *text_filename, long pat_num, int min_pat_len, int 
      
     parse_forbid(forbid, &forbide);
 
-    ifile = Fopen (text_filename, "r");
+    ifile = Fopen (text_filename, "rb");
 
     buff = MALLOC(file_len, unsigned char);
     
@@ -257,7 +257,7 @@ patset_t *cre_pat_set(const char *pats_file_name)
     FILE *fp_pats; /*模式串文件*/
     patset_t *pat_set;
      
-    fp_pats = Fopen(pats_file_name, "r");
+    fp_pats = Fopen(pats_file_name, "rb");
 
     pat_set = MALLOC(1, patset_t);
     pat_set->pats_file = strdup(pats_file_name);

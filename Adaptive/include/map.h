@@ -3,6 +3,13 @@
 
 #include "share.h"
 
+
+typedef struct map_1 {
+  Char_t key;
+  Expand_Node_t expand_node;
+  Flag_t pat_end_flag;
+} Map_1_t;
+
 typedef struct map_4 {
   char dif_ch_num; /* 最大为4 */
   Char_t keys[4];
@@ -29,6 +36,7 @@ typedef struct map_256{
 } Map_256_t;
 
 void build_map(Expand_Node_t *expand_node, Pat_Num_t dif_ch_num);
+Expand_Node_t *match_map_1(Map_1_t *map_1, Char_t const **text, Bool_t *is_pat_end);
 Expand_Node_t *match_map_4(Map_4_t *map_4, Char_t const **text, Bool_t *is_pat_end);
 Expand_Node_t *match_map_16(Map_16_t *map_16, Char_t const **text, Bool_t *is_pat_end);
 Expand_Node_t *match_map_48(Map_48_t *map_48, Char_t const **text, Bool_t *is_pat_end);

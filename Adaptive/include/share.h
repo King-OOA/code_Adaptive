@@ -10,23 +10,28 @@ typedef UC_t Type_t;
 typedef UC_t Flag_t;
 typedef unsigned Hash_Value_t;
 
-#define TYPE_NUM    8
+#define TYPE_NUM    10
 #define END         0
-#define ARRAY       1
-#define HASH        2
-#define MAP_4       3
-#define MAP_16      4
-#define MAP_48      5
-#define MAP_256     6
-#define MAP_65536   7
+#define SINGLE_STR  1
+#define ARRAY       2
+#define HASH        3
+#define MAP_1       4
+#define MAP_4       5
+#define MAP_16      6
+#define MAP_48      7
+#define MAP_256     8
+#define MAP_65536   9
 
 
-#define PAT_NUM_THRESHOLD 100
+#define NUM_TO_BUILD_ARRAY 50
 #define TRUE 1
 #define FALSE 0
 #define MAX_PAT_LEN 256
 #define POINTER_SIZE 8
-#define SMALL_ARRAY_SIZE 20
+#define SMALL_ARRAY_SIZE 4
+
+#define DEBUG 1
+
 
 
 typedef struct expand_node {

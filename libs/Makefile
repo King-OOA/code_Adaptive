@@ -1,5 +1,5 @@
 LFLAGS = -shared
-CFLAGS = -O3 -Wall -c -fPIC -I$(INCLUDE)
+CFLAGS = -g -Wall -c -fPIC -I$(INCLUDE)
 
 vpath %.h ./include ../Adaptive/include
 vpath %.c ./src
