@@ -10,6 +10,7 @@
 
 extern Queue_t *queue;
 extern Pat_Num_t type_num[];
+extern Fun_Call_Elmt_t fun_calls[];
 
 unsigned array_len[NUM_TO_BUILD_ARRAY];
 
@@ -51,7 +52,6 @@ void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_le
 									\
   *next_p = NULL;
 
-
   if (str_len > POINTER_SIZE) { /* 节点外 */
     while (n--) (str_elmt++)->str.p = MALLOC(str_len, Char_t); /* 为每个节点,在节点外分配空间 */
     BUILD_ARRAY(p);
@@ -74,10 +74,22 @@ void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_le
     }
 }
 
+static Single_Str_t *make_single_str(Pat_Len_t str_len)
+{
+     Single_Str_t *new_single_str = VMALLOC(Single_Str_t, Char_t, str_len);
+     
+     new_single_str->str_len = str_len;
+     new_single_str->is_pat_end = FALSE;
+     new_single_str->expand_node.type = END;
+     new_single_str->expand_node.next_level = NULL;
+     
+     return new_single_str;
+}
+
 void build_single_str(Expand_Node_t *expand_node, Pat_Len_t str_len)
 {
   Suffix_Node_t *cur_suf, *next_suf, **next_p;
-  Single_Str_t *single_str = VMALLOC(Single_Str_t, Char_t, str_len);
+  Single_Str_t *single_str = make_single_str(str_len);
   
   cur_suf = expand_node->next_level;
   memcpy(single_str->str, cur_suf->str, str_len);
@@ -96,7 +108,6 @@ void build_single_str(Expand_Node_t *expand_node, Pat_Len_t str_len)
   expand_node->next_level = single_str;
   expand_node->type = SINGLE_STR;
 
-  
 #if DEBUG
   type_num[SINGLE_STR]++;
 #endif
@@ -107,6 +118,10 @@ void build_single_str(Expand_Node_t *expand_node, Pat_Len_t str_len)
  
 inline Expand_Node_t *match_single_str(Single_Str_t *single_str, Char_t const **text, Bool_t *is_pat_end)
 {
+#if DEBUG 
+ fun_calls[SINGLE_STR].times++;
+#endif 
+
   if (!same_str(single_str->str, *text, single_str->str_len))
     return NULL;
   
@@ -119,30 +134,34 @@ inline Expand_Node_t *match_single_str(Single_Str_t *single_str, Char_t const **
 /*有序查找*/
 inline static Expand_Node_t *ordered_match(Str_Array_t *str_array, Char_t const **text, Bool_t *is_pat_end)
 {
-     Pat_Len_t str_len = str_array->str_len;
-     Pat_Num_t str_num;
-     Char_t const *s = *text;
-     Str_Elmt_t *str_elmt;
-     int result;
+#if DEBUG
+  fun_calls[ARRAY].times++;
+#endif
+  
+  Pat_Len_t str_len = str_array->str_len;
+  Pat_Num_t str_num;
+  Char_t const *s = *text;
+  Str_Elmt_t *str_elmt;
+  int result;
 
-#define ORDERED_MATCH(pointer)                                                    \
-     for (str_num = str_array->str_num, str_elmt = str_array->array;	          \
-	  str_num && (result = str_n_cmp(str_elmt->str.pointer, s, str_len)) < 0; \
-	  str_num--, str_elmt++)                                                  \
-     ;
+#define ORDERED_MATCH(pointer)						\
+  for (str_num = str_array->str_num, str_elmt = str_array->array;	\
+       str_num && (result = str_n_cmp(str_elmt->str.pointer, s, str_len)) < 0; \
+       str_num--, str_elmt++)						\
+    ;
      
-     if (str_len > POINTER_SIZE)  /* 节点外 */
-       ORDERED_MATCH(p)
-     else 			/* 节点内 */
-       ORDERED_MATCH(buf)
+  if (str_len > POINTER_SIZE)  /* 节点外 */
+    ORDERED_MATCH(p)
+  else 			/* 节点内 */
+    ORDERED_MATCH(buf)
 
-     if (str_num == 0 || result > 0) 	/* 没找到 */
-	  return NULL;
+  if (str_num == 0 || result > 0) 	/* 没找到 */
+    return NULL;
 
-     *is_pat_end = str_elmt->pat_end_flag;
-     *text += str_len;
+  *is_pat_end = str_elmt->pat_end_flag;
+  *text += str_len;
      
-     return &str_elmt->expand_node;
+  return &str_elmt->expand_node;
 }
 
 /* 二分查找 */
@@ -153,6 +172,10 @@ inline static Expand_Node_t *binary_match(Str_Array_t *str_array, Char_t const *
   Pat_Len_t str_len = str_array->str_len;
   Char_t const *s = *text;
   int result;
+
+#if DEBUG
+  fun_calls[BINARY].times++;
+#endif
 
 #define BINARY_MATCH(pointer)                                               \
   while (low <= high) {				                            \
@@ -167,7 +190,7 @@ inline static Expand_Node_t *binary_match(Str_Array_t *str_array, Char_t const *
 	low = mid + 1;                                                      \
     }
 
-  if (str_len > POINTER_SIZE) 
+  if (str_len > POINTER_SIZE) 	/* 节点外 */
     BINARY_MATCH(p)
   else  			/* 节点内 */
     BINARY_MATCH(buf)
@@ -177,13 +200,12 @@ inline static Expand_Node_t *binary_match(Str_Array_t *str_array, Char_t const *
 
 Expand_Node_t *match_array(Str_Array_t *str_array, Char_t const **text, Bool_t *is_pat_end)
 {
-  if (str_array->str_num <= SMALL_ARRAY_SIZE)
-    return ordered_match(str_array, text, is_pat_end);
-  else
-    return binary_match(str_array, text, is_pat_end);
-    
+  return (str_array->str_num <= SMALL_ARRAY_SIZE) ?
+    ordered_match(str_array, text, is_pat_end) :
+    binary_match(str_array, text, is_pat_end);
 }
 
+#if DEBUG
 void print_array(Str_Array_t *str_array)
 {
   Str_Elmt_t *str_elmt;
@@ -204,141 +226,4 @@ void print_array(Str_Array_t *str_array)
   else
     PRINT_ARRAY(buf)
 }
-
-/* void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_len) */
-/* { */
-/*      Suffix_Node_t *cur_suf, *next_suf; */
-/*      Str_Array_t *str_array = make_array(str_num, str_len); /\* 构建str_array *\/ */
-/*      int n; */
-/*      Str_Elmt_t *str_elmt; */
-     
-/*      if (str_len > POINTER_SIZE)  /\* 节点外 *\/ */
-/* 	  for (str_num = 0, cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) { /\* str_num表示当前在数组中已存放的串数 *\/ */
-/* 	       next_suf = cur_suf->next; */
-	       
-/* 	       for (n = str_num, str_elmt = str_array->array; n && !same_str(str_elmt->str.p, cur_suf->str, str_len); str_elmt++, n--) */
-/* 		    ; */
-
-/* 	       if (n == 0) {/\* 没找到 *\/ */
-/* 		    str_elmt->str.p = MALLOC(str_len, Char_t); */
-/* 		    memcpy(str_elmt->str.p, cur_suf->str, str_len); */
-/* 		    str_num++; */
-/* 	       } */
-	       
-/* 	       if (cur_suf = cut_head(cur_suf, str_len)) */
-/* 		    insert_to_expand(&str_elmt->expand_node, cur_suf); */
-/* 	       else */
-/* 		    str_elmt->pat_end_flag = 1; */
-/* 	  } */
-/*      else  /\* 节点内 *\/ */
-/* 	  for (str_num = 0, cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) { /\* str_num表示当前在数组中已有的串数 *\/ */
-/* 	       next_suf = cur_suf->next; */
-	       
-/* 	       for (n = str_num, str_elmt = str_array->array; n && !same_str(str_elmt->str.buf, cur_suf->str, str_len); str_elmt++, n--) */
-/* 		    ; */
-
-/* 	       if (n == 0) {/\* 没找到 *\/ */
-/* 		    memcpy(str_elmt->str.buf, cur_suf->str, str_len); */
-/* 		    str_num++; */
-/* 	       } */
-	       
-/* 	       if (cur_suf = cut_head(cur_suf, str_len)) */
-/* 		    insert_to_expand(&str_elmt->expand_node, cur_suf); */
-/* 	       else */
-/* 		    str_elmt->pat_end_flag = 1; */
-/* 	  } */
-
-/*      expand_node->next_level = str_array; */
-/*      expand_node->type = ARRAY; */
-/*      type_num[ARRAY]++; */
-     
-/*      /\* 加入到队列 *\/ */
-/*      for (str_elmt = str_array->array; str_num; str_elmt++, str_num--) */
-/* 	  if (str_elmt->expand_node.next_level) */
-/* 	       in_queue(queue, &str_elmt->expand_node); */
-/* } */
-
-/*无序查找  */
-
-/* Expand_Node_t *match_array(Str_Array_t *str_array, Char_t const **text, Bool_t *is_pat_end) */
-/* { */
-/*      Pat_Len_t str_len = str_array->str_len; */
-/*      Pat_Num_t str_num; */
-/*      Char_t const *s = *text; */
-/*      Str_Elmt_t *str_elmt; */
-
-/*      if (str_len > POINTER_SIZE)  /\* 节点外 *\/ */
-/* 	  for (str_num = str_array->str_num, str_elmt = str_array->array; */
-/* 	       str_num && !same_str(s, str_elmt->str.p, str_len); */
-/* 	       str_num--, str_elmt++) */
-/* 	       ; */
-/*      else 			/\* 节点内 *\/ */
-/* 	  for (str_num = str_array->str_num, str_elmt = str_array->array; */
-/* 	       str_num && !same_str(s, str_elmt->str.buf, str_len); */
-/* 	       str_num--, str_elmt++) */
-/* 	       ; */
-
-/*      if (str_num == 0) 	/\* 没找到 *\/ */
-/* 	  return NULL; */
-
-/*      *is_pat_end = str_elmt->pat_end_flag; */
-/*      *text += str_len; */
-     
-/*      return &str_elmt->expand_node; */
-/* } */
-
-
-/* void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_len) */
-/* { */
-/*   Suffix_Node_t *cur_suf, *next_suf, *suf_list, **next_p; */
-/*   Str_Array_t *str_array = make_array(str_num, str_len); /\* 构建str_array *\/ */
-/*   Str_Elmt_t *str_elmt = str_array->array; */
-  
-/*   if (str_len > POINTER_SIZE) { /\* 节点外 *\/ */
-/*     str_elmt->str.p = MALLOC(str_len, Char_t); /\* 把第一个字符串拷入数组的第一个元素 *\/ */
-/*     memcpy(str_elmt->str.p, ((Suffix_Node_t *) expand_node->next_level)->str, str_len); */
-
-/*     for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) { */
-/*       next_suf = cur_suf->next; cur_suf->next = NULL; */
-/*       if (!same_str(str_elmt->str.p, cur_suf->str, str_len)) { /\* 如果遇到新的不相等的字符串 *\/ */
-/* 	(++str_elmt)->str.p = MALLOC(str_len, Char_t);	       /\* 则先将其拷入新的数组元素中 *\/ */
-/* 	memcpy(str_elmt->str.p, cur_suf->str, str_len); */
-/*       } */
-
-/*       if (cur_suf = cut_head(cur_suf, str_len)) {  */
-/* 	cur_suf->next = str_elmt->expand_node.next_level; */
-/* 	str_elmt->expand_node.next_level = cur_suf; */
-/*       } */
-/*       else */
-/* 	str_elmt->pat_end_flag = 1; */
-/*     } */
-/*   } else {			/\* 节点内 *\/ */
-/*     memcpy(str_elmt->str.buf, ((Suffix_Node_t *) expand_node->next_level)->str, str_len); */
-
-/*     for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) { */
-/*       next_suf = cur_suf->next; cur_suf->next = NULL; */
-/*       if (!same_str(str_elmt->str.buf, cur_suf->str, str_len)) { */
-/* 	memcpy((++str_elmt)->str.buf, cur_suf->str, str_len); */
-/*       } */
-
-/*       if (cur_suf = cut_head(cur_suf, str_len)) { */
-/* 	cur_suf->next = str_elmt->expand_node.next_level; */
-/* 	str_elmt->expand_node.next_level = cur_suf; */
-/*       } */
-/*       else */
-/* 	str_elmt->pat_end_flag = 1; */
-/*     } */
-/*   } */
-
-/*   expand_node->next_level = str_array; */
-/*   expand_node->type = ARRAY; */
-/*   type_num[ARRAY]++; */
-     
-/*   /\* 加入到队列 *\/ */
-/*   for (str_elmt = str_array->array; str_num; str_elmt++, str_num--) */
-/*     if (suf_list = str_elmt->expand_node.next_level) { */
-/*       str_elmt->expand_node.next_level = list_radix_sort(suf_list); */
-/*       //     remove_duplicate(str_elmt->expand_node.next_level); */
-/*       in_queue(queue, &str_elmt->expand_node); */
-/*     } */
-/* } */
+#endif 

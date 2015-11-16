@@ -12,18 +12,17 @@ typedef unsigned Hash_Value_t;
 
 #define TYPE_NUM    10
 #define END         0
-#define SINGLE_STR  1
-#define ARRAY       2
-#define HASH        3
-#define MAP_1       4
-#define MAP_4       5
-#define MAP_16      6
-#define MAP_48      7
-#define MAP_256     8
-#define MAP_65536   9
+#define SINGLE_CH   1
+#define MAP_4       2
+#define MAP_16      3
+#define MAP_48      4
+#define MAP_256     5
+#define SINGLE_STR  6
+#define ARRAY       7
+#define BINARY      8 /* 数组二分查找 */
+#define HASH        9
 
-
-#define NUM_TO_BUILD_ARRAY 50
+#define NUM_TO_BUILD_ARRAY 100
 #define TRUE 1
 #define FALSE 0
 #define MAX_PAT_LEN 256
@@ -31,8 +30,6 @@ typedef unsigned Hash_Value_t;
 #define SMALL_ARRAY_SIZE 4
 
 #define DEBUG 1
-
-
 
 typedef struct expand_node {
   Type_t type;
@@ -44,6 +41,10 @@ typedef struct suffix_node {
   Char_t str[];
 } Suffix_Node_t;
 
+typedef struct fun_call_elmt {
+  char fun_name[100];
+  unsigned times;
+} Fun_Call_Elmt_t;
 
 typedef struct str_elmt {
   Flag_t pat_end_flag; /* 第0位标示是否是模式尾, 第1位标示字符串是否内嵌 */

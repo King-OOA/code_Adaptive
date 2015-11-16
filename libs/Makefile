@@ -1,5 +1,5 @@
 LFLAGS = -shared
-CFLAGS = -g -Wall -c -fPIC -I$(INCLUDE)
+CFLAGS = -O3 -Wall -c -fPIC -I$(INCLUDE)
 
 vpath %.h ./include ../Adaptive/include
 vpath %.c ./src
@@ -59,8 +59,8 @@ sorter.o : sorter.c sorter.h share.h
 
 .PHONY: ra ro rso
 ra : ro rso
-	rm a.out
+	-rm a.out
 ro :
-	rm *.o
+	-rm *.o
 rso:
-	rm $(SOPATH)/*.so
+	-rm $(SOPATH)/*.so

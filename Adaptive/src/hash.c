@@ -18,7 +18,7 @@ static unsigned power2[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4
 
 extern Queue_t *queue;
 extern unsigned type_num[];
-
+extern Fun_Call_Elmt_t fun_calls[];
 
 inline Hash_Value_t hash(Char_t const *c, Pat_Len_t len, char power)
 {
@@ -77,7 +77,9 @@ void build_hash(Expand_Node_t *expand_node, Pat_Num_t dif_prf_num, Pat_Len_t lsp
 	
   expand_node->next_level = hash_table;
   expand_node->type = HASH;
+#if DEBUG
   type_num[HASH]++;
+#endif   
   free(tail);
 
   /* 将hash表新产生的expand_node加入队列 */
@@ -89,12 +91,17 @@ void build_hash(Expand_Node_t *expand_node, Pat_Num_t dif_prf_num, Pat_Len_t lsp
 /* Hash表只能确定一定不匹配的串,可能匹配的串需要由对应expand node的下一级来进一步判断 */
 Expand_Node_t *match_hash(Hash_Table_t *hash_table, Char_t const **text, Bool_t *is_pat_end)
 {
+#if DEBUG
+  fun_calls[HASH].times++;
+#endif 
+
   Char_t const *s = *text;
   Expand_Node_t *slot = hash_table->slots + hash(s, hash_table->lsp, hash_table->power);
   
   return slot->next_level == NULL ? NULL : slot;
 }
 
+#if DEBUG
 void print_hash(Hash_Table_t *hash_table)
 {
     Expand_Node_t *slot = hash_table->slots;
@@ -109,67 +116,4 @@ void print_hash(Hash_Table_t *hash_table)
     	print_suffix(slot->next_level);
       }
 }
-
-/* void build_hash(Expand_Node_t *expand_node, Pat_Num_t dif_prf_num, Pat_Len_t lsp)   */
-/* { */
-/*     char  power; */
-/*     Hash_Table_t *hash_table; */
-/*     Suffix_Node_t *cur_suf, *next_suf; */
-/*     Char_t *suf_str; */
-/*     Collision_Elmt_t *coli_elmt; */
-/*     Pat_Num_t slots_num, item_num, *item_in_slot, i; */
-/*     Slot_t *slot; */
-
-/*     for (power = 1; dif_prf_num > power2[power]; power++) */
-/*       ; */
-     
-/*     power--; */
-/*     hash_table = make_hash_table(power2[power], lsp, power); */
-     
-/*     divide_to_slot(expand_node, hash_table, lsp, item_in_slot); /\* 先将所有后缀分配到指定哈希槽内,并统计冲突项数 *\/ */
-    
-/*     for (i = 0; i < hash_table->slots_num; i++) /\* 为每一个哈希槽建立冲突结构 *\/ */
-/*       if (item_num = item_in_slot[i]) */
-/* 	build_collision_structure(hash_table->slots + i, item_num); */
-    
-	
-
-/* for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) { /\* 先把所有后缀放入其对应的哈希槽中 *\/ */
-/*       next_suf = cur_suf->next; */
-/*       suf_str = cur_suf->str; */
-/*       slot = hash_table->slots + hash(suf_str, lsp, power); */
-	  
-/*       for (item_num = slot->item_num, coli_elmt = slot->collision_structure; */
-/* 	   item_num && !same_str(suf_str, IS_IN_NODE(coli_elmt->flag) ? coli_elmt->str.buf : coli_elmt->str.p, lsp); */
-/* 	   item_num--, coli_elmt++) */
-/* 	; */
-	 
-/*       if (item_num == 0) {  /\* 没找到 *\/ */
-/* 	coli_elmt = enlarge_coli_array(slot); /\* 新建一项,放于最后 *\/ */
-/* 	if (lsp <= POINTER_SIZE) { /\* 放到节点内部 *\/ */
-/* 	  memcpy(coli_elmt->str.buf, suf_str, lsp); */
-/* 	  SET_IN_NODE(coli_elmt->flag); */
-/* 	} else {  /\* 放到节点外部 *\/ */
-/* 	  coli_elmt->str.p = MALLOC(lsp, Char_t); */
-/* 	  memcpy(coli_elmt->str.p, suf_str, lsp); */
-/* 	} */
-/*       } */
-	  
-/*       if (cur_suf = cut_head(cur_suf, lsp)) */
-/* 	insert_to_expand(&coli_elmt->expand_node, cur_suf); */
-/*       else */
-/* 	SET_PAT_END(coli_elmt->flag); */
-/*     } */
-  
-/*     expand_node->next_level = hash_table; */
-/*     expand_node->type = HASH; */
-/*     type_num[HASH]++; */
-  
-/*     /\* 将hash表新产生的expand_node加入队列 *\/ */
-/*     slots_num = hash_table->slots_num;  */
-/*     for (slot = hash_table->slots; slots_num; slot++, slots_num--) */
-/*       if (item_num = slot->item_num) */
-/* 	for (coli_elmt = slot->collision_structure; item_num; coli_elmt++, item_num--) */
-/* 	  if (coli_elmt->expand_node.next_level) */
-/* 	    in_queue(queue, &coli_elmt->expand_node); */
-/*   } */
+#endif 

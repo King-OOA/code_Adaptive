@@ -78,6 +78,8 @@ inline int str_n_cmp(Char_t const *s1, Char_t const *s2, Pat_Len_t len)
   return len == 0 ? 0 : *s1 - *s2;
 }
 
+
+#if DEBUG
 void print_str(Char_t const *s, Pat_Len_t len, Char_t terminator)
 {
   while (len--)
@@ -93,6 +95,8 @@ void print_suffix(Suffix_Node_t *cur_suf)
     cur_suf = cur_suf->next;
   }
 }
+
+#endif 
 
 /* 有序并去重 */
 /* void insert_to_expand(Expand_Node_t *expand_node, Suffix_Node_t *suf_node) */
