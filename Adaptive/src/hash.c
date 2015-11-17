@@ -17,8 +17,8 @@ static unsigned power2[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4
 			    2097152, 4194304};
 
 extern Queue_t *queue;
-extern unsigned type_num[];
-extern Fun_Call_Elmt_t fun_calls[];
+extern Sta_Elmt_t type_num[];
+extern Sta_Elmt_t fun_calls[];
 
 inline Hash_Value_t hash(Char_t const *c, Pat_Len_t len, char power)
 {
@@ -61,6 +61,10 @@ void build_hash(Expand_Node_t *expand_node, Pat_Num_t dif_prf_num, Pat_Len_t lsp
   unsigned hash_value;
   Suffix_Node_t ***tail;
 
+#if DEBUG
+  type_num[HASH].num++;
+#endif   
+
   for (power = 1; dif_prf_num > power2[power]; power++)
     ;
      
@@ -77,9 +81,6 @@ void build_hash(Expand_Node_t *expand_node, Pat_Num_t dif_prf_num, Pat_Len_t lsp
 	
   expand_node->next_level = hash_table;
   expand_node->type = HASH;
-#if DEBUG
-  type_num[HASH]++;
-#endif   
   free(tail);
 
   /* 将hash表新产生的expand_node加入队列 */
@@ -92,7 +93,7 @@ void build_hash(Expand_Node_t *expand_node, Pat_Num_t dif_prf_num, Pat_Len_t lsp
 Expand_Node_t *match_hash(Hash_Table_t *hash_table, Char_t const **text, Bool_t *is_pat_end)
 {
 #if DEBUG
-  fun_calls[HASH].times++;
+  fun_calls[MATCH_HASH].num++;
 #endif 
 
   Char_t const *s = *text;

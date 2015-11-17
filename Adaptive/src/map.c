@@ -10,9 +10,9 @@
 #include "map.h"
 
 extern Queue_t *queue;
-extern unsigned type_num[];
 unsigned ch_num[256];
-extern Fun_Call_Elmt_t fun_calls[];
+extern  Sta_Elmt_t type_num[];
+extern Sta_Elmt_t fun_calls[];
 
 void build_single_ch(Expand_Node_t *expand_node)
 {
@@ -20,7 +20,7 @@ void build_single_ch(Expand_Node_t *expand_node)
     Single_Ch_t *single_ch = CALLOC(1, Single_Ch_t);
 
 #if DEBUG
-    type_num[SINGLE_CH]++;
+    type_num[SINGLE_CH].num++;
 #endif     
 
     cur_suf = expand_node->next_level;
@@ -173,22 +173,22 @@ void build_map(Expand_Node_t *expand_node, Pat_Num_t dif_ch_num)
   if (dif_ch_num <= 4) {
     build_map_4(expand_node, dif_ch_num);
 #if DEBUG
-    type_num[MAP_4]++;
+    type_num[MAP_4].num++;
 #endif     
   } else if (dif_ch_num <= 16) {
     build_map_16(expand_node, dif_ch_num);
 #if DEBUG
-    type_num[MAP_16]++;
+    type_num[MAP_16].num++;
 #endif     
   } else if (dif_ch_num <= 48) {
     build_map_48(expand_node, dif_ch_num);
 #if DEBUG
-    type_num[MAP_48]++;
+    type_num[MAP_48].num++;
 #endif     
   } else {
     build_map_256(expand_node);
 #if DEBUG
-    type_num[MAP_256]++;
+    type_num[MAP_256].num++;
 #endif     
   }
 }
@@ -196,7 +196,7 @@ void build_map(Expand_Node_t *expand_node, Pat_Num_t dif_ch_num)
 Expand_Node_t *match_single_ch(Single_Ch_t *single_ch, Char_t const **text, Bool_t *is_pat_end)
 {
 #if DEBUG
-  fun_calls[SINGLE_CH].times++;
+  fun_calls[MATCH_SINGLE_CH].num++;
 #endif 
 
  if (**text != single_ch->key)
@@ -211,7 +211,7 @@ Expand_Node_t *match_single_ch(Single_Ch_t *single_ch, Char_t const **text, Bool
 Expand_Node_t *match_map_4(Map_4_t *map_4, Char_t const **text, Bool_t *is_pat_end)
 {
 #if DEBUG
-  fun_calls[MAP_4].times++;
+  fun_calls[MATCH_MAP_4].num++;
 #endif 
 
  Char_t ch = **text, *key;
@@ -236,7 +236,7 @@ Expand_Node_t *match_map_4(Map_4_t *map_4, Char_t const **text, Bool_t *is_pat_e
 Expand_Node_t *match_map_16(Map_16_t *map_16, Char_t const **text, Bool_t *is_pat_end)
 {
 #if DEBUG
-  fun_calls[MAP_16].times++;
+  fun_calls[MATCH_MAP_16].num++;
 #endif 
 
   Char_t *keys = map_16->keys, ch = **text;
@@ -264,7 +264,7 @@ Expand_Node_t *match_map_16(Map_16_t *map_16, Char_t const **text, Bool_t *is_pa
 Expand_Node_t *match_map_48(Map_48_t *map_48, Char_t const **text, Bool_t *is_pat_end)
 {
 #if DEBUG
-  fun_calls[MAP_48].times++;
+  fun_calls[MATCH_MAP_48].num++;
 #endif 
 
   UC_t ch = **text;
@@ -282,7 +282,7 @@ Expand_Node_t *match_map_48(Map_48_t *map_48, Char_t const **text, Bool_t *is_pa
 Expand_Node_t *match_map_256(Map_256_t *map_256, Char_t const **text, Bool_t *is_pat_end)
 {
 #if DEBUG
-  fun_calls[MAP_256].times++;
+  fun_calls[MATCH_MAP_256].num++;
 #endif 
 
   UC_t ch = **text;

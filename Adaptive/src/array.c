@@ -9,8 +9,8 @@
 #include "array.h"
 
 extern Queue_t *queue;
-extern Pat_Num_t type_num[];
-extern Fun_Call_Elmt_t fun_calls[];
+extern Sta_Elmt_t type_num[];
+extern Sta_Elmt_t fun_calls[];
 
 unsigned array_len[NUM_TO_BUILD_ARRAY];
 
@@ -31,6 +31,11 @@ void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_le
   Str_Array_t *str_array = make_array(str_num, str_len); /* 构建str_array */
   Str_Elmt_t *str_elmt = str_array->array;
   Pat_Num_t n = str_num;
+
+#if DEBUG
+  type_num[ARRAY].num++;
+  array_len[str_array->str_num]++;
+#endif
 
 #define BUILD_ARRAY(pointer)						\
   str_elmt = str_array->array;        /* 把第一个字符串拷入数组的第一个元素 */ \
@@ -61,11 +66,6 @@ void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_le
   
   expand_node->next_level = str_array;
   expand_node->type = ARRAY;
-
-#if DEBUG
-  type_num[ARRAY]++;
-  array_len[str_array->str_num]++;
-#endif
   
   /* 加入到队列 */
   for (str_elmt = str_array->array; str_num; str_elmt++, str_num--)
@@ -109,7 +109,7 @@ void build_single_str(Expand_Node_t *expand_node, Pat_Len_t str_len)
   expand_node->type = SINGLE_STR;
 
 #if DEBUG
-  type_num[SINGLE_STR]++;
+  type_num[SINGLE_STR].num++;
 #endif
 
   if (single_str->expand_node.next_level)
@@ -119,7 +119,7 @@ void build_single_str(Expand_Node_t *expand_node, Pat_Len_t str_len)
 inline Expand_Node_t *match_single_str(Single_Str_t *single_str, Char_t const **text, Bool_t *is_pat_end)
 {
 #if DEBUG 
- fun_calls[SINGLE_STR].times++;
+ fun_calls[MATCH_SINGLE_STR].num++;
 #endif 
 
   if (!same_str(single_str->str, *text, single_str->str_len))
@@ -135,7 +135,7 @@ inline Expand_Node_t *match_single_str(Single_Str_t *single_str, Char_t const **
 inline static Expand_Node_t *ordered_match(Str_Array_t *str_array, Char_t const **text, Bool_t *is_pat_end)
 {
 #if DEBUG
-  fun_calls[ARRAY].times++;
+  fun_calls[MATCH_ORDERED_ARRAY].num++;
 #endif
   
   Pat_Len_t str_len = str_array->str_len;
@@ -174,7 +174,7 @@ inline static Expand_Node_t *binary_match(Str_Array_t *str_array, Char_t const *
   int result;
 
 #if DEBUG
-  fun_calls[BINARY].times++;
+  fun_calls[MATCH_BINARY_ARRAY].num++;
 #endif
 
 #define BINARY_MATCH(pointer)                                               \

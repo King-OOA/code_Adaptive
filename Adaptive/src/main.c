@@ -14,17 +14,15 @@
 #include "sorter.h"
 
 Queue_t *queue;
-unsigned type_num[TYPE_NUM];
 extern unsigned ch_num[];
 extern unsigned array_len[];
 
-static const char *type_names[] =
-{"",
- "single char", "map 4", "map 16", "map 48",
- "map 256", "single string", "array", "", "hash" };
+Sta_Elmt_t type_num[] =
+  {{"", 0}, {"single char", 0}, {"map 4", 0}, {"map 16", 0}, {"map 48", 0},
+   {"map 256", 0}, {"single string", 0}, {"array", 0}, {"hash", 0}};
 
-Fun_Call_Elmt_t fun_calls[] = {
-  {"", 0},  {"single char match", 0}, {"map 4 match", 0},
+Sta_Elmt_t fun_calls[] = {
+  {"single char match", 0}, {"map 4 match", 0},
   {"map 16 match", 0}, {"map 48 match", 0}, {"map 256 match", 0},
   {"single string match", 0}, {"array ordered match", 0},
   {"array binary match", 0}, {"hash match", 0}};
@@ -41,7 +39,6 @@ static Expand_Node_t *(*match_fun[]) (void *, Char_t const **, Bool_t *) =
      (Match_Fun_t) match_map_256,
      (Match_Fun_t) match_single_str,
      (Match_Fun_t) match_array,
-     NULL, /* 二分查找合并在数组匹配中 */
      (Match_Fun_t) match_hash
 };
 
@@ -139,8 +136,8 @@ static Bool_t match_round(Expand_Node_t *expand_node, Char_t *text, char *pat_bu
 
 static int fun_cmp(const void *elmt_1, const void *elmt_2)
 {
-  unsigned times_1 = ((Fun_Call_Elmt_t *) elmt_1)->times;
-  unsigned times_2 = ((Fun_Call_Elmt_t *) elmt_2)->times;
+  unsigned times_1 = ((Sta_Elmt_t *) elmt_1)->num;
+  unsigned times_2 = ((Sta_Elmt_t *) elmt_2)->num;
 
   if(times_1 > times_2)
     return 1;
@@ -150,16 +147,44 @@ static int fun_cmp(const void *elmt_1, const void *elmt_2)
     return -1;
 }
 
-void print_statistics(Bool_t show_details)
+/* 计算num中的位数 */
+static int get_digits(unsigned num)
 {
   int i;
-  unsigned total_fun_calls = 0;
+
+  for (i = 1; num / 10; num /= 10, i++)
+    ;
   
-  /* 打印各种结构的统计信息 */
+  return i;
+}
+
+void print_statistics(Bool_t show_details)
+{
+  int i, digits;
+  unsigned total_num;
+  
+  /* 打印各种结构的数量 */
   printf("\nNumber of structures:\n\n");
-  for (i = 0; i < TYPE_NUM; i++)
-    if (type_num[i])
-      printf("%s: %u\n", type_names[i], type_num[i]);
+  for (total_num = 0, i = 1; i < TYPE_NUM; i++)
+    total_num += type_num[i].num;
+
+  qsort(type_num + 1,  TYPE_NUM - 1, sizeof(Sta_Elmt_t), fun_cmp);
+  digits = get_digits(type_num[TYPE_NUM-1].num); /* 最大数的位数 */
+  
+  for (i = TYPE_NUM - 1; i > 0; i--)
+    printf("%-13s: %*u (%5.2f%%)\n", type_num[i].name, digits, type_num[i].num, ((double) type_num[i].num / total_num) * 100.0);
+
+  /* 打印匹配函数调用次数 */
+  printf("\nNumber of function calls:\n\n");
+  for (total_num = 0, i = 0; i < MATCH_FUN_NUM; i++)
+    total_num += fun_calls[i].num;
+    
+  qsort(fun_calls, MATCH_FUN_NUM, sizeof(Sta_Elmt_t), fun_cmp);
+  digits = get_digits(fun_calls[MATCH_FUN_NUM-1].num); /* 最大数的位数 */
+
+  /* 从大到小输出 */
+  for (i = TYPE_NUM - 1; i >= 0; i--)
+    printf("%-20s: %*u (%5.2f%%)\n", fun_calls[i].name, digits, fun_calls[i].num, ((double) fun_calls[i].num / total_num) * 100.0);
 
   if (show_details) {
     printf("\n\nDiferent sigle char num:\n");
@@ -172,16 +197,7 @@ void print_statistics(Bool_t show_details)
       if (array_len[i])
 	printf("%d: %u\n", i, array_len[i]);
 
-    printf("\nNumber of function calls:\n\n");
-    for (i = 1; i < TYPE_NUM; i++)
-      total_fun_calls += fun_calls[i].times;
-    
-    qsort(fun_calls + 1, TYPE_NUM - 1, sizeof(Fun_Call_Elmt_t), fun_cmp);
-    /* 从大到小输出 */
-    for (i = TYPE_NUM - 1; i > 0; i--)
-      printf("%s: %u (%.2f%%)\n", fun_calls[i].fun_name, fun_calls[i].times, ((double) fun_calls[i].times / total_fun_calls) * 100.0);
   }
-
 }
 
 int main(int argc, char **argv)

@@ -9,8 +9,8 @@ typedef char Bool_t;
 typedef UC_t Type_t;
 typedef UC_t Flag_t;
 typedef unsigned Hash_Value_t;
-
-#define TYPE_NUM    10
+/* 结构类型 */
+#define TYPE_NUM    9
 #define END         0
 #define SINGLE_CH   1
 #define MAP_4       2
@@ -19,10 +19,20 @@ typedef unsigned Hash_Value_t;
 #define MAP_256     5
 #define SINGLE_STR  6
 #define ARRAY       7
-#define BINARY      8 /* 数组二分查找 */
-#define HASH        9
+#define HASH        8
+/* 匹配函数类型 */
+#define MATCH_FUN_NUM       9
+#define MATCH_SINGLE_CH     0
+#define MATCH_MAP_4         1
+#define MATCH_MAP_16        2
+#define MATCH_MAP_48        3
+#define MATCH_MAP_256       4
+#define MATCH_SINGLE_STR    5
+#define MATCH_ORDERED_ARRAY 6
+#define MATCH_BINARY_ARRAY  7
+#define MATCH_HASH          8
 
-#define NUM_TO_BUILD_ARRAY 100
+#define NUM_TO_BUILD_ARRAY 50
 #define TRUE 1
 #define FALSE 0
 #define MAX_PAT_LEN 256
@@ -41,13 +51,13 @@ typedef struct suffix_node {
   Char_t str[];
 } Suffix_Node_t;
 
-typedef struct fun_call_elmt {
-  char fun_name[100];
-  unsigned times;
-} Fun_Call_Elmt_t;
+typedef struct sta_elmt {	/* 统计元素 */
+  char name[100];
+  unsigned num;
+} Sta_Elmt_t;
 
 typedef struct str_elmt {
-  Flag_t pat_end_flag; /* 第0位标示是否是模式尾, 第1位标示字符串是否内嵌 */
+  Flag_t pat_end_flag; 
   union {
     Char_t buf[POINTER_SIZE];
     Char_t *p;
