@@ -9,32 +9,32 @@
   int value;
 
   for (;;) {
-  printf("ÇëÊäÈëÖ¸Áî: ");
+  printf("è¯·è¾“å…¥æŒ‡ä»¤: ");
   scanf(" %c", &op);
   while (getchar() != '\n')
   ;
 
   switch(op) {
   case 'i':  
-  printf("ÇëÊäÈëÖµ: ");
+  printf("è¯·è¾“å…¥å€¼: ");
   scanf("%d", &value);
   in_queue(q, value);
   break;
   case 'd': out_queue(q);break;
   case 'f': 
   if ((value = get_q_first(q)) != EMPTY)
-  printf("µÚÒ»¸öÔªËØÎª: %d", value);
+  printf("ç¬¬ä¸€ä¸ªå…ƒç´ ä¸º: %d", value);
   else
-  puts("¶ÓÁÐ¿Õ!");
+  puts("é˜Ÿåˆ—ç©º!");
   break;
   case 'l': if ((value = get_q_last(q)) != EMPTY)
-  printf("×îºóÒ»¸öÔªËØÎª: %d", value);
+  printf("æœ€åŽä¸€ä¸ªå…ƒç´ ä¸º: %d", value);
   else
-  puts("¶ÓÁÐ¿Õ!");
+  puts("é˜Ÿåˆ—ç©º!");
   break;
   case 'p': print_queue(q);break;
   case 'q': return;break;
-  default: puts("²»ºÏ·¨Ö¸Áî!");
+  default: puts("ä¸åˆæ³•æŒ‡ä»¤!");
   }
   printf("\n");
   }
@@ -53,7 +53,7 @@ void free_queue(Queue_t *q)
      free(q);
 }
 
-void clean_queue(Queue_t *q) /*Çå¿Õ¶ÓÁÐÁ´±í£¬µ«±£Áô¶ÓÁÐ½á¹¹*/
+void clean_queue(Queue_t *q) /*æ¸…ç©ºé˜Ÿåˆ—é“¾è¡¨ï¼Œä½†ä¿ç•™é˜Ÿåˆ—ç»“æž„*/
 {
      Q_Node_t *free_node;
 
@@ -72,14 +72,14 @@ int queue_is_empty(Queue_t *q)
      return q->count == 0;
 }
 
-void in_queue(Queue_t *q, Q_Value_t value) /*²åÈëÒ»¸öÔªËØ*/
+void in_queue(Queue_t *q, Q_Value_t value) /*æ’å…¥ä¸€ä¸ªå…ƒç´ */
 {
      Q_Node_t *new_node =  MALLOC(1, Q_Node_t);
 
      new_node->value = value;
      new_node->next = NULL;
 
-     if (queue_is_empty(q)) {/*²åÈëµÚÒ»¸ö½Úµã*/
+     if (queue_is_empty(q)) {/*æ’å…¥ç¬¬ä¸€ä¸ªèŠ‚ç‚¹*/
           q->head = new_node;
           q->tail = new_node;
      } else {	
@@ -90,7 +90,7 @@ void in_queue(Queue_t *q, Q_Value_t value) /*²åÈëÒ»¸öÔªËØ*/
      q->count++;
 }
 
-Q_Value_t out_queue(Queue_t *q) /*É¾³ýÒ»¸öÔªËØ*/
+Q_Value_t out_queue(Queue_t *q) /*åˆ é™¤ä¸€ä¸ªå…ƒç´ */
 {
      Q_Node_t* free_node;
      Q_Value_t value;
@@ -106,13 +106,13 @@ Q_Value_t out_queue(Queue_t *q) /*É¾³ýÒ»¸öÔªËØ*/
      free(free_node);
      q->count--;
 
-     if (queue_is_empty(q)) /*É¾³ýÁË×îºóÒ»¸ö½Úµã*/
+     if (queue_is_empty(q)) /*åˆ é™¤äº†æœ€åŽä¸€ä¸ªèŠ‚ç‚¹*/
           q->tail = NULL;
 
      return value;
 }
 
-Q_Value_t get_q_first(Queue_t *q) /*·µ»Ø¶ÓÁÐµÚÒ»¸öÔªËØÖµ£¬²¢²»É¾³ý*/
+Q_Value_t get_q_first(Queue_t *q) /*è¿”å›žé˜Ÿåˆ—ç¬¬ä¸€ä¸ªå…ƒç´ å€¼ï¼Œå¹¶ä¸åˆ é™¤*/
 {
      if (queue_is_empty(q))
           return EMPTY;
@@ -120,7 +120,7 @@ Q_Value_t get_q_first(Queue_t *q) /*·µ»Ø¶ÓÁÐµÚÒ»¸öÔªËØÖµ£¬²¢²»É¾³ý*/
           return q->head->value;
 }
 
-Q_Value_t get_q_last(Queue_t *q)/*·µ»Ø¶ÓÁÐ×îºóÒ»¸öÔªËØÖµ£¬²¢²»É¾³ý*/
+Q_Value_t get_q_last(Queue_t *q)/*è¿”å›žé˜Ÿåˆ—æœ€åŽä¸€ä¸ªå…ƒç´ å€¼ï¼Œå¹¶ä¸åˆ é™¤*/
 {
      if (queue_is_empty(q))
           return EMPTY;
@@ -137,13 +137,13 @@ void print_queue(Queue_t *q)
      fp_result = fopen("./queue_content", "w");
      
      if (queue_is_empty(q)) {
-          printf("¿Õ¶ÓÁÐ!\n");
-          fputs("¿Õ¶ÓÁÐ!\n", fp_result);
+          printf("ç©ºé˜Ÿåˆ—!\n");
+          fputs("ç©ºé˜Ÿåˆ—!\n", fp_result);
           return;
      }
 
-     printf("¶ÓÁÐÖÐ¹²ÓÐ %ld ÔªËØ:\n ", q->count);
-     fprintf(fp_result, "¶ÓÁÐÖÐ¹²ÓÐ %ld ÔªËØ:\n ", q->count);
+     printf("é˜Ÿåˆ—ä¸­å…±æœ‰ %ld å…ƒç´ :\n ", q->count);
+     fprintf(fp_result, "é˜Ÿåˆ—ä¸­å…±æœ‰ %ld å…ƒç´ :\n ", q->count);
      for (index = q->head; index; index = index->next) {
           printf("%ld ", index->value);
           fprintf(fp_result, "%ld ", index->value);

@@ -172,7 +172,7 @@ void print_statistics(Bool_t show_details)
   digits = get_digits(type_num[TYPE_NUM-1].num); /* 最大数的位数 */
   
   for (i = TYPE_NUM - 1; i > 0; i--)
-    printf("%-13s: %*u (%5.2f%%)\n", type_num[i].name, digits, type_num[i].num, ((double) type_num[i].num / total_num) * 100.0);
+    printf("%-13s : %*u (%5.2f%%)\n", type_num[i].name, digits, type_num[i].num, ((double) type_num[i].num / total_num) * 100.0);
 
   /* 打印匹配函数调用次数 */
   printf("\nNumber of function calls:\n\n");
@@ -184,7 +184,7 @@ void print_statistics(Bool_t show_details)
 
   /* 从大到小输出 */
   for (i = TYPE_NUM - 1; i >= 0; i--)
-    printf("%-20s: %*u (%5.2f%%)\n", fun_calls[i].name, digits, fun_calls[i].num, ((double) fun_calls[i].num / total_num) * 100.0);
+    printf("%-20s : %*u (%5.2f%%)\n", fun_calls[i].name, digits, fun_calls[i].num, ((double) fun_calls[i].num / total_num) * 100.0);
 
   if (show_details) {
     printf("\n\nDiferent sigle char num:\n");
