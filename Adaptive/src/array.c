@@ -7,35 +7,30 @@
 #include "common.h"
 #include "queue.h"
 #include "array.h"
+#include "statistics.h"
 
 extern Queue_t *queue;
-extern Sta_Elmt_t type_num[];
-extern Sta_Elmt_t fun_calls[];
-
-unsigned array_len[NUM_TO_BUILD_ARRAY];
+extern Str_Num_t type_num[];
+extern Str_Num_t fun_calls[];
+extern unsigned array_len[];
 
 static Str_Array_t *make_array(Pat_Num_t str_num, Pat_Len_t str_len)
 {
-     Str_Array_t *new_array = VMALLOC(Str_Array_t, Str_Elmt_t, str_num);
+  Str_Array_t *new_array = VMALLOC(Str_Array_t, Str_Elmt_t, str_num);
      
-     new_array->str_num = str_num;
-     new_array->str_len = str_len;
-     memset(new_array->array, 0, str_num * sizeof(Str_Elmt_t));
+  new_array->str_num = str_num;
+  new_array->str_len = str_len;
+  memset(new_array->array, 0, str_num * sizeof(Str_Elmt_t));
      
-     return new_array;
+  return new_array;
 }
 
-void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_len)
+static void build_str_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_len)
 {
   Suffix_Node_t *cur_suf, *next_suf, *suf_list, **next_p;
   Str_Array_t *str_array = make_array(str_num, str_len); /* 构建str_array */
   Str_Elmt_t *str_elmt = str_array->array;
   Pat_Num_t n = str_num;
-
-#if DEBUG
-  type_num[ARRAY].num++;
-  array_len[str_array->str_num]++;
-#endif
 
 #define BUILD_ARRAY(pointer)						\
   str_elmt = str_array->array;        /* 把第一个字符串拷入数组的第一个元素 */ \
@@ -108,12 +103,26 @@ void build_single_str(Expand_Node_t *expand_node, Pat_Len_t str_len)
   expand_node->next_level = single_str;
   expand_node->type = SINGLE_STR;
 
-#if DEBUG
-  type_num[SINGLE_STR].num++;
-#endif
-
   if (single_str->expand_node.next_level)
     in_queue(queue, &single_str->expand_node);
+}
+
+void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_len)
+{
+  
+  if (str_num == 1) {
+    build_single_str(expand_node, str_len);
+#if DEBUG
+    type_num[SINGLE_STR].num++;
+#endif
+  } else {
+    build_str_array(expand_node, str_num, str_len);
+#if DEBUG
+    type_num[ARRAY].num++;
+#endif
+  }
+  
+  
 }
  
 inline Expand_Node_t *match_single_str(Single_Str_t *single_str, Char_t const **text, Bool_t *is_pat_end)

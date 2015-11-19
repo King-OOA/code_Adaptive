@@ -12,20 +12,9 @@
 #include "array.h"
 #include "map.h"
 #include "sorter.h"
+#include "statistics.h"
 
 Queue_t *queue;
-extern unsigned ch_num[];
-extern unsigned array_len[];
-
-Sta_Elmt_t type_num[] =
-  {{"", 0}, {"single char", 0}, {"map 4", 0}, {"map 16", 0}, {"map 48", 0},
-   {"map 256", 0}, {"single string", 0}, {"array", 0}, {"hash", 0}};
-
-Sta_Elmt_t fun_calls[] = {
-  {"single char match", 0}, {"map 4 match", 0},
-  {"map 16 match", 0}, {"map 48 match", 0}, {"map 256 match", 0},
-  {"single string match", 0}, {"array ordered match", 0},
-  {"array binary match", 0}, {"hash match", 0}};
 
 typedef Expand_Node_t * (* Match_Fun_t)(void *, Char_t const **, Bool_t *);
 
@@ -94,14 +83,9 @@ static void choose_adaptor(Expand_Node_t *expand_node)
   get_num_and_lsp(expand_node, &total_suf_num, &dif_prf_num, &lsp);
   
   if (lsp == 1) {
-    if (dif_prf_num == 1)
-      build_single_ch(expand_node); /* 单个字符 */
-    else
-      build_map(expand_node, dif_prf_num);
+    build_map(expand_node, dif_prf_num);
   } else {
-    if (dif_prf_num == 1)
-      build_single_str(expand_node, lsp); /* 单个字符串 */
-    else if (dif_prf_num < NUM_TO_BUILD_ARRAY)
+    if (dif_prf_num < NUM_TO_BUILD_ARRAY)
       build_array(expand_node, dif_prf_num, lsp);
     else
       build_hash(expand_node, dif_prf_num, lsp);
@@ -132,72 +116,6 @@ static Bool_t match_round(Expand_Node_t *expand_node, Char_t *text, char *pat_bu
   *pat_buf = '\0';
   
   return is_matched;
-}
-
-static int fun_cmp(const void *elmt_1, const void *elmt_2)
-{
-  unsigned times_1 = ((Sta_Elmt_t *) elmt_1)->num;
-  unsigned times_2 = ((Sta_Elmt_t *) elmt_2)->num;
-
-  if(times_1 > times_2)
-    return 1;
-  else if(times_1 == times_2)
-    return 0;
-  else
-    return -1;
-}
-
-/* 计算num中的位数 */
-static int get_digits(unsigned num)
-{
-  int i;
-
-  for (i = 1; num / 10; num /= 10, i++)
-    ;
-  
-  return i;
-}
-
-void print_statistics(Bool_t show_details)
-{
-  int i, digits;
-  unsigned total_num;
-  
-  /* 打印各种结构的数量 */
-  printf("\nNumber of structures:\n\n");
-  for (total_num = 0, i = 1; i < TYPE_NUM; i++)
-    total_num += type_num[i].num;
-
-  qsort(type_num + 1,  TYPE_NUM - 1, sizeof(Sta_Elmt_t), fun_cmp);
-  digits = get_digits(type_num[TYPE_NUM-1].num); /* 最大数的位数 */
-  
-  for (i = TYPE_NUM - 1; i > 0; i--)
-    printf("%-13s : %*u (%5.2f%%)\n", type_num[i].name, digits, type_num[i].num, ((double) type_num[i].num / total_num) * 100.0);
-
-  /* 打印匹配函数调用次数 */
-  printf("\nNumber of function calls:\n\n");
-  for (total_num = 0, i = 0; i < MATCH_FUN_NUM; i++)
-    total_num += fun_calls[i].num;
-    
-  qsort(fun_calls, MATCH_FUN_NUM, sizeof(Sta_Elmt_t), fun_cmp);
-  digits = get_digits(fun_calls[MATCH_FUN_NUM-1].num); /* 最大数的位数 */
-
-  /* 从大到小输出 */
-  for (i = TYPE_NUM - 1; i >= 0; i--)
-    printf("%-20s : %*u (%5.2f%%)\n", fun_calls[i].name, digits, fun_calls[i].num, ((double) fun_calls[i].num / total_num) * 100.0);
-
-  if (show_details) {
-    printf("\n\nDiferent sigle char num:\n");
-    for (i = 0; i < 256; i++)
-      if (ch_num[i])
-	printf("%d: %u\n", i, ch_num[i]);
-  
-    printf("\nArray len distribution:\n");
-    for (i = 1; i < NUM_TO_BUILD_ARRAY; i++)
-      if (array_len[i])
-	printf("%d: %u\n", i, array_len[i]);
-
-  }
 }
 
 int main(int argc, char **argv)
@@ -259,7 +177,6 @@ int main(int argc, char **argv)
   fprintf(stderr, "\nMatching..."); fflush(stdout);
   start = clock();
   text_end = text_buf + file_size - 1;
-  putchar('\n');
      
   for (text_p = text_buf; text_p < text_end; text_p++) {
     is_matched = match_round(root, text_p, pat_buf);

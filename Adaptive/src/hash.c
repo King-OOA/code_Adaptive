@@ -7,6 +7,7 @@
 #include "share.h"
 #include "hash.h"
 #include "queue.h"
+#include "statistics.h"
 
 #define L_BITS 6
 #define R_BITS 2
@@ -17,8 +18,8 @@ static unsigned power2[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4
 			    2097152, 4194304};
 
 extern Queue_t *queue;
-extern Sta_Elmt_t type_num[];
-extern Sta_Elmt_t fun_calls[];
+extern Str_Num_t type_num[];
+extern Str_Num_t fun_calls[];
 
 inline Hash_Value_t hash(Char_t const *c, Pat_Len_t len, char power)
 {

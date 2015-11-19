@@ -1,4 +1,4 @@
-OBJS = main.o share.o hash.o map.o array.o #:= $(patsubst %.c, %.o, $(wildcard *.c))
+OBJS = main.o share.o hash.o map.o array.o statistics.o #:= $(patsubst %.c, %.o, $(wildcard *.c))
 LIBPATH = /home/pz/code/libs/so
 
 INCLUDE_1 = /home/pz/code/libs/include
@@ -27,6 +27,11 @@ map.o: map.c share.h common.h
 
 array.o: array.c share.h common.h
 	gcc $(CFLAGS) $< -o $@	
+
+
+statistics.o: statistics.c share.h 
+	gcc $(CFLAGS) $< -o $@	
+
 
 .PHONY: ro ra
 ra : ro

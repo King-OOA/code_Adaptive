@@ -36,6 +36,8 @@ typedef unsigned Hash_Value_t;
 #define TRUE 1
 #define FALSE 0
 #define MAX_PAT_LEN 256
+#define ALPHABET_SIZE 256
+#define MIN_PERCENT 1.0
 #define POINTER_SIZE 8
 #define SMALL_ARRAY_SIZE 4
 
@@ -51,10 +53,6 @@ typedef struct suffix_node {
   Char_t str[];
 } Suffix_Node_t;
 
-typedef struct sta_elmt {	/* 统计元素 */
-  char name[100];
-  unsigned num;
-} Sta_Elmt_t;
 
 typedef struct str_elmt {
   Flag_t pat_end_flag; 

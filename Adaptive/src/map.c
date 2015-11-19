@@ -8,20 +8,17 @@
 #include "binary.h"
 #include "common.h"
 #include "map.h"
+#include "statistics.h"
 
 extern Queue_t *queue;
-unsigned ch_num[256];
-extern  Sta_Elmt_t type_num[];
-extern Sta_Elmt_t fun_calls[];
+extern Num_Num_t ch_num[];
+extern  Str_Num_t type_num[];
+extern Str_Num_t fun_calls[];
 
 void build_single_ch(Expand_Node_t *expand_node)
 {
     Suffix_Node_t *cur_suf, *next_suf, **next_p;
     Single_Ch_t *single_ch = CALLOC(1, Single_Ch_t);
-
-#if DEBUG
-    type_num[SINGLE_CH].num++;
-#endif     
 
     cur_suf = expand_node->next_level;
     single_ch->key = *cur_suf->str;
@@ -167,10 +164,16 @@ static void build_map_256(Expand_Node_t *expand_node)
 void build_map(Expand_Node_t *expand_node, Pat_Num_t dif_ch_num)
 {
 #if DEBUG  
-  ch_num[dif_ch_num]++;
+  ch_num[dif_ch_num].num_1 = dif_ch_num;
+  ch_num[dif_ch_num].num_2++;
 #endif   
 
-  if (dif_ch_num <= 4) {
+  if (dif_ch_num == 1) {	/* 单个字符 */
+    build_single_ch(expand_node);
+#if DEBUG
+    type_num[SINGLE_CH].num++;
+#endif     
+  } else if (dif_ch_num <= 4) {
     build_map_4(expand_node, dif_ch_num);
 #if DEBUG
     type_num[MAP_4].num++;
