@@ -31,35 +31,48 @@ static Expand_Node_t *(*match_fun[]) (void *, Char_t const **, Bool_t *) =
      (Match_Fun_t) match_hash
 };
 
-static Suffix_Node_t *make_suffix_node(Char_t const *pat)
+static Suffix_Node_t *make_suffix_node(Char_t const *pat, Pat_Len_t pat_len)
 {
      Suffix_Node_t *new_suf_node;
      
-     new_suf_node = VMALLOC(Suffix_Node_t, char, strlen(pat) + 1);
-     new_suf_node->next = NULL;
+     new_suf_node = VMALLOC(Suffix_Node_t, char, pat_len + 1);
      strcpy(new_suf_node->str, pat);
+     new_suf_node->next = NULL;
      
      return new_suf_node;
 }
 
 static Suffix_Node_t *read_pats(FILE *pats_fp)
 {
-     char buf[MAX_PAT_LEN+1]; /*模式串缓存，最大1000个字符，包括换行符*/
-     Pat_Len_t pat_len;
-     char *line_break = NULL; /*换行符指针*/
-     Suffix_Node_t *list_head = NULL, *new_suf_node = NULL; /* 链表头指针 */
+  Char_t buf[MAX_PAT_LEN+1]; /*模式串缓存,包括换行符*/
+  Pat_Len_t pat_len;
+  Char_t *line_break = NULL; /*换行符指针*/
+  Suffix_Node_t *list_head = NULL, *new_suf_node = NULL; /* 链表头指针 */
      
-     while (fgets(buf, sizeof(buf), pats_fp)) {
-	  if (line_break = strchr(buf, '\n'))
-	       *line_break = '\0';
-	  if (pat_len = strlen(buf)) {
-	       new_suf_node = make_suffix_node(buf);
-	       new_suf_node->next = list_head;
-	       list_head = new_suf_node;
-	  }
-     }
+  while (fgets(buf, sizeof(buf), pats_fp)) {
+    if (line_break = strchr(buf, '\n'))
+      *line_break = '\0';
+    if (pat_len = strlen(buf)) {
+      new_suf_node = make_suffix_node(buf, pat_len);
+      new_suf_node->next = list_head;
+      list_head = new_suf_node;
+    }
+  }
   
-     return list_head;
+  return list_head;
+}
+
+/* 有序链表去重,头节点一定保留 */
+static void remove_duplicates(Suffix_Node_t *pat_list)
+{
+  Suffix_Node_t *left = pat_list, *right = left->next;
+
+  while (right) 
+    if (strcmp(left->str, right->str) == 0) {
+      right = right->next; free(left->next); left->next = right;
+    } else {
+      left = right; right = left->next;
+    }
 }
 
 static Expand_Node_t *make_root(FILE *pats_fp)
@@ -68,45 +81,70 @@ static Expand_Node_t *make_root(FILE *pats_fp)
      Expand_Node_t *root = CALLOC(1, Expand_Node_t);
      
      pat_list = list_radix_sort(read_pats(pats_fp)); /* 先排序 */
-     remove_duplicate(pat_list); /* 再去重 */
+     remove_duplicates(pat_list); /* 再去重 */
     
      root->next_level = pat_list;
      
      return root;
 }
 
+static void get_ndp_and_lsp(Expand_Node_t const *expand_node, Pat_Num_t *ndp_p, Pat_Len_t *lsp_p)
+{
+  Suffix_Node_t *cur_suf, *left, *right;
+  Pat_Len_t suf_len, lsp = MAX_PAT_LEN;
+  Pat_Num_t ndp = 1;
+  
+  /* 确定lsp */
+  for (cur_suf = expand_node->next_level; cur_suf; cur_suf = cur_suf->next)
+    if ((suf_len = strlen(cur_suf->str)) < lsp)
+      lsp = suf_len;
+  
+  *lsp_p = lsp;
+  
+  /* 确定ndp */
+  left = expand_node->next_level; right = left->next;
+  while (right)
+    if (same_str(left->str, right->str, lsp))
+      right = right->next;
+    else {
+      left = right; right = left->next; ndp++;
+    }
+
+  *ndp_p = ndp;
+}
+
 static void choose_adaptor(Expand_Node_t *expand_node)
 {
-  Pat_Num_t total_suf_num, dif_prf_num;
-  Pat_Len_t lsp; /* 最短模式串长 */
+  Pat_Num_t ndp; /* number of the distinct prefix */
+  Pat_Len_t lsp; /* length of the shortest prefix */
      
-  get_num_and_lsp(expand_node, &total_suf_num, &dif_prf_num, &lsp);
+  get_ndp_and_lsp(expand_node, &ndp, &lsp);
   
   if (lsp == 1) {
-    build_map(expand_node, dif_prf_num);
+    build_map(expand_node, ndp);
   } else {
-    if (dif_prf_num < NUM_TO_BUILD_ARRAY)
-      build_array(expand_node, dif_prf_num, lsp);
+    if (ndp < NUM_TO_BUILD_ARRAY)
+      build_array(expand_node, ndp, lsp);
     else
-      build_hash(expand_node, dif_prf_num, lsp);
+      build_hash(expand_node, ndp, lsp);
   }
 }
 
-static Bool_t match_round(Expand_Node_t *expand_node, Char_t *text, char *pat_buf)
+static Bool_t match_round(Expand_Node_t *expand_node, Char_t const *text_p, Char_t *pat_buf)
 {
   Bool_t is_matched = FALSE, is_pat_end = FALSE;
-  Char_t *s = text;
+  Char_t const *pos = text_p;
   Pat_Len_t pat_len;
   
   while (expand_node && expand_node->type != END) {
-    expand_node = match_fun[expand_node->type](expand_node->next_level, &s, &is_pat_end);
+    expand_node = match_fun[expand_node->type](expand_node->next_level, &pos, &is_pat_end);
 
 #if DEBUG
    if (is_pat_end) {
       is_matched = TRUE;
-      pat_len = s - text;
+      pat_len = pos - text_p;
       *pat_buf++ = ' ';
-      memcpy(pat_buf, text, pat_len);
+      memcpy(pat_buf, text_p, pat_len);
       pat_buf += pat_len;
       is_pat_end = FALSE;
     }
@@ -126,7 +164,7 @@ int main(int argc, char **argv)
   clock_t start, end;
   Char_t *text_buf, *text_p, *text_end;;
   Char_t pat_buf[1000];
-  Bool_t show_match_results = FALSE, show_sta_details = FALSE;
+  Bool_t show_match_results = FALSE, show_sta_results = FALSE;
   Char_t opt;
   Char_t *text_file_name, *pats_file_name;
   Bool_t is_matched = FALSE;
@@ -139,21 +177,20 @@ int main(int argc, char **argv)
       while (opt = *++*argv)
 	switch (opt) {
 	case 'o' : show_match_results = TRUE; break;
-	case 's' : show_sta_details = TRUE; break;
+	case 's' : show_sta_results = TRUE; break;
 	default : fprintf(stderr, "非法命令行参数!\n"); exit(EXIT_FAILURE);
 	}
      
 
-  /* 预处理,构建自适应匹配结构 */
+  /* 预处理,构建自适应节点 */
   pats_fp = Fopen(pats_file_name, "r");
-  fprintf(stderr, "\nConstructing adaptive matching structure..."); fflush(stdout);
+  fprintf(stderr, "\nConstructing Adaptive Structures..."); fflush(stdout);
   start = clock();
   root = make_root(pats_fp);	/* 构建根节点 */
   Fclose(pats_fp);
      
   queue = make_queue();
   in_queue(queue, root);
-  start = clock();
   while (!queue_is_empty(queue))
     choose_adaptor(out_queue(queue));
   end = clock();
@@ -189,5 +226,9 @@ int main(int argc, char **argv)
   fprintf(stderr, "Done!  \n%f\n",
 	  (double) (end - start) / CLOCKS_PER_SEC);
 
-  print_statistics(show_sta_details); /* 打印程序运行过程中的各种统计信息 */
+#if DEBUG
+  if (show_sta_results)
+    print_statistics(); /* 打印程序运行过程中的各种统计信息 */
+#endif 
+
 }
