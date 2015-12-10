@@ -23,8 +23,11 @@ typedef struct str_array {
   Pat_Num_t str_num;
   Pat_Len_t str_len;
   Expand_Node_t *expand_nodes;
-  Flag_t is_pat_end[NUM_TO_BUILD_ARRAY/8+1];
-  Char_t array[];
+  union {
+    Flag_t tag[POINTER_SIZE];
+    Flag_t *p;
+  } is_pat_end;
+  Char_t str_buf[];
 } Str_Array_t;
 
 void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_len);

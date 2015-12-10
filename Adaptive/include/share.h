@@ -39,6 +39,7 @@ typedef unsigned Hash_Value_t;
 #define ALPHABET_SIZE 256
 #define MIN_PERCENT 1.0
 #define POINTER_SIZE 8
+#define BITS_PER_BYTE 8
 #define SMALL_ARRAY_SIZE 4
 
 #define DEBUG 1

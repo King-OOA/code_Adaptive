@@ -8,6 +8,7 @@
 #include "queue.h"
 #include "array.h"
 #include "statistics.h"
+#include "binary.h"
 
 extern Queue_t *queue;
 extern Str_Num_t type_num[];
@@ -55,12 +56,17 @@ static void build_single_str(Expand_Node_t *expand_node, Pat_Len_t str_len)
 
 static Str_Array_t *make_str_array(Pat_Num_t str_num, Pat_Len_t str_len)
 {
-  Str_Array_t *new_array = VMALLOC(Str_Array_t, Str_Elmt_t, str_num);
-     
+  Str_Array_t *new_array = VMALLOC(Str_Array_t, Char_t, str_len * str_num);
+  
   new_array->str_num = str_num;
   new_array->str_len = str_len;
-  memset(new_array->array, 0, str_num * sizeof(Str_Elmt_t));
-     
+  new_array->expand_nodes = CALLOC(str_num, Expand_Node_t);
+  memset(new_array->str_buf, 0, str_num * str_len * sizeof(Char_t));
+  if (str_num > POINTER_SIZE * BITS_PER_BYTE)
+    new_array->is_pat_end.p = CALLOC(str_num / sizeof(char) + 1, Flag_t);
+  else
+    memset(new_array->is_pat_end.tag, 0, POINTER_SIZE);
+
   return new_array;
 }
 
@@ -68,44 +74,40 @@ static void build_str_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_L
 {
   Suffix_Node_t *cur_suf, *next_suf,  **next_p;
   Str_Array_t *str_array = make_str_array(str_num, str_len); /* 构建str_array */
-  Str_Elmt_t *str_elmt = str_array->array;
-  Pat_Num_t n = str_num;
+  Char_t *str_buf = str_array->str_buf;
+  Expand_Node_t *cur_expand_node = str_array->expand_nodes;
+  Flag_t *is_pat_end;
 
-#define BUILD_ARRAY(pointer)						\
-  str_elmt = str_array->array;						\
-  cur_suf = expand_node->next_level;					\
-  memcpy(str_elmt->str.pointer, cur_suf->str, str_len);			\
-  next_p = (Suffix_Node_t **) &str_elmt->expand_node.next_level;	\
-									\
-  for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) { \
-    next_suf = cur_suf->next;						\
-    if (!same_str(str_elmt->str.pointer, cur_suf->str, str_len)) {	\
-      memcpy((++str_elmt)->str.pointer, cur_suf->str, str_len); /*原链表终止, 指向新链表头 */ \
-      *next_p = NULL; next_p = (Suffix_Node_t **) &str_elmt->expand_node.next_level; \
-    }									\
-									\
-    if (cur_suf = cut_head(cur_suf, str_len)) {				\
-      *next_p = cur_suf; next_p = &cur_suf->next;			\
-    } else								\
-      str_elmt->pat_end_flag = TRUE;					\
-  }									\
-									\
+  is_pat_end = str_num > POINTER_SIZE * BITS_PER_BYTE ?
+    str_array->is_pat_end.p :
+    str_array->is_pat_end.tag;
+  
+  cur_suf = expand_node->next_level;
+  memcpy(str_buf, cur_suf->str, str_len);
+  next_p = (Suffix_Node_t **) &cur_expand_node->next_level;
+  
+  for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) {
+    next_suf = cur_suf->next;
+    if (!same_str(str_buf, cur_suf->str, str_len)) {
+      memcpy(str_buf += str_len, cur_suf->str, str_len); /*原链表终止, 指向新链表头 */ 
+      *next_p = NULL; next_p = (Suffix_Node_t **) &(++cur_expand_node)->next_level;
+    }									
+									
+    if (cur_suf = cut_head(cur_suf, str_len)) {				
+      *next_p = cur_suf; next_p = &cur_suf->next;			
+    } else								
+      set_bit(is_pat_end, cur_expand_node - str_array->expand_nodes);
+  }									
+									
   *next_p = NULL;
-
-  if (str_len > POINTER_SIZE) { /* 节点外 */
-    while (n--) (str_elmt++)->str.p = MALLOC(str_len, Char_t); /* 为每个节点,在节点外分配空间 */
-    BUILD_ARRAY(p)
-  } else {
-    BUILD_ARRAY(buf)
-  }
   
   expand_node->next_level = str_array;
   expand_node->type = ARRAY;
   
   /* 加入到队列 */
-  for (str_elmt = str_array->array; str_num; str_elmt++, str_num--)
-    if (str_elmt->expand_node.next_level)
-      in_queue(queue, &str_elmt->expand_node);
+  for (expand_node = str_array->expand_nodes; str_num; expand_node++, str_num--)
+    if (expand_node->next_level)
+      in_queue(queue, expand_node);
 }
 
 void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_len)
@@ -126,8 +128,6 @@ void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_le
 	  type_num[ARRAY].num++;
 #endif
      }
-  
-  
 }
  
 inline Expand_Node_t *match_single_str(Single_Str_t *single_str, Char_t const **pos_p, Bool_t *is_pat_end)
