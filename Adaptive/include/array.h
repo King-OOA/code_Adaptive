@@ -24,7 +24,7 @@ typedef struct str_array {
   Pat_Len_t str_len;
   Expand_Node_t *expand_nodes;
   union {
-    Flag_t tag[POINTER_SIZE];
+    Flag_t flag[POINTER_SIZE];
     Flag_t *p;
   } is_pat_end;
   Char_t str_buf[];
