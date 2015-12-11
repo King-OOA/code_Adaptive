@@ -130,6 +130,8 @@ static void choose_adaptor(Expand_Node_t *expand_node)
   }
 }
 
+extern unsigned match_num;
+
 static Bool_t match_round(Expand_Node_t *expand_node, Char_t const *text_p, Char_t *pat_buf)
 {
   Bool_t is_matched = FALSE, is_pat_end = FALSE;
@@ -141,12 +143,13 @@ static Bool_t match_round(Expand_Node_t *expand_node, Char_t const *text_p, Char
 
 #if DEBUG
    if (is_pat_end) {
-      is_matched = TRUE;
-      pat_len = pos - text_p;
-      *pat_buf++ = ' ';
-      memcpy(pat_buf, text_p, pat_len);
-      pat_buf += pat_len;
-      is_pat_end = FALSE;
+     match_num++;
+     is_matched = TRUE;
+     pat_len = pos - text_p;
+     *pat_buf++ = ' ';
+     memcpy(pat_buf, text_p, pat_len);
+     pat_buf += pat_len;
+     is_pat_end = FALSE;
     }
 #endif 
   }
@@ -225,6 +228,8 @@ int main(int argc, char **argv)
   end = clock();
   fprintf(stderr, "Done!  \n%f\n",
 	  (double) (end - start) / CLOCKS_PER_SEC);
+  
+  fprintf(stderr, "Total matched number: %u\n", match_num);
 
 #if DEBUG
   if (show_sta_results)

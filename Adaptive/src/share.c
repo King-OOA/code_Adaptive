@@ -4,7 +4,9 @@
 #include <string.h>
 #include "share.h"
 #include "common.h"
+#include "queue.h"
 
+extern Queue_t *queue;
 
 Suffix_Node_t *cut_head(Suffix_Node_t *suf_node, Pat_Len_t lsp)
 {
@@ -36,6 +38,14 @@ inline int str_n_cmp(Char_t const *s1, Char_t const *s2, Pat_Len_t len)
   return len == 0 ? 0 : *s1 - *s2;
 }
 
+void push_queue(Expand_Node_t const *expand_node, Pat_Num_t num)
+{
+  while (num--) {
+    if (expand_node->next_level)
+      in_queue(queue, expand_node);
+    expand_node++;
+  }
+}
 
 #if DEBUG
 void print_str(Char_t const *s, Pat_Len_t len, Char_t terminator)
@@ -55,20 +65,3 @@ void print_suffix(Suffix_Node_t *cur_suf)
 }
 
 #endif 
-
-/* 有序并去重 */
-/* void insert_to_expand(Expand_Node_t *expand_node, Suffix_Node_t *suf_node) */
-/* { */
-/*   Suffix_Node_t **next_p = (Suffix_Node_t **) &expand_node->next_level; */
-/*   Suffix_Node_t *cur_suf; */
-/*   int result; */
-  
-/*   while ((cur_suf = *next_p) && (result = strcmp(cur_suf->str, suf_node->str)) < 0) */
-/*     next_p = &cur_suf->next; */
-  
-/*   if (cur_suf == NULL || result > 0) { */
-/*     suf_node->next = cur_suf; */
-/*     *next_p = suf_node; */
-/*   } else  /\* 已经存在 *\/ */
-/*     free(suf_node); */
-/* } */

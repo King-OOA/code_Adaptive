@@ -61,7 +61,6 @@ void build_hash(Expand_Node_t *expand_node, Pat_Num_t ndp, Pat_Len_t lsp)
   Hash_Table_t *hash_table;
   Suffix_Node_t *cur_suf, *next_suf, ***tails;
   Pat_Num_t table_size;
-  Expand_Node_t *slot;
   unsigned hash_value;
 
 #if DEBUG
@@ -74,6 +73,7 @@ void build_hash(Expand_Node_t *expand_node, Pat_Num_t ndp, Pat_Len_t lsp)
   table_size = power2[--power];
   hash_table = make_hash_table(table_size, lsp, power);
   tails = make_tails(table_size, hash_table->slots);
+
   /* 把每个后缀放入其对应的哈希槽中 */
   for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) { 
     next_suf = cur_suf->next; cur_suf->next = NULL;
@@ -85,11 +85,8 @@ void build_hash(Expand_Node_t *expand_node, Pat_Num_t ndp, Pat_Len_t lsp)
   free(tails);
   expand_node->next_level = hash_table;
   expand_node->type = HASH;
-
-  /* 将hash表新产生的expand_node加入队列 */
-  for (table_size = hash_table->table_size, slot = hash_table->slots; table_size; slot++, table_size--)
-    if (slot->next_level)
-      in_queue(queue, slot);
+  
+  push_queue(hash_table->slots, hash_table->table_size);
 }
 
 /* Hash表只能确定一定不匹配的串,可能匹配的串需要由对应expand node的下一级来进一步判断 */

@@ -37,8 +37,7 @@ void build_single_ch(Expand_Node_t *expand_node)
     expand_node->next_level = single_ch;
     expand_node->type = SINGLE_CH;
 
-    if (single_ch->expand_node.next_level)
-      in_queue(queue, &single_ch->expand_node);
+    push_queue(&single_ch->expand_node, 1);
 }
 
 #define BUILD_MAP_4_OR_16(n)						\
@@ -76,10 +75,8 @@ static void build_map_##n(Expand_Node_t *expand_node, Pat_Num_t ch_num) \
   *next_p = NULL;                                                       \
   expand_node->next_level = map_##n;					\
   expand_node->type = MAP_##n;						\
-									\
-  for (expand_node = map_##n->expand_nodes; ch_num; expand_node++, ch_num--) \
-    if (expand_node->next_level)					\
-      in_queue(queue, expand_node);					\
+  									\
+  push_queue(map_##n->expand_nodes, ch_num);                            \
 }
 
 BUILD_MAP_4_OR_16(4)
@@ -123,9 +120,7 @@ static void build_map_48(Expand_Node_t *expand_node, Pat_Num_t ch_num)
   expand_node->next_level = map_48;
   expand_node->type = MAP_48;
 
-  for (expand_node = map_48->expand_nodes; ch_num; expand_node++, ch_num--)
-    if (expand_node->next_level)
-      in_queue(queue, expand_node);
+  push_queue(map_48->expand_nodes, ch_num);
 }
 
 static void build_map_256(Expand_Node_t *expand_node)
@@ -134,7 +129,6 @@ static void build_map_256(Expand_Node_t *expand_node)
   Map_256_t *map_256 = CALLOC(1, Map_256_t);
   Expand_Node_t *expand_nodes_256 = map_256->expand_nodes;
   UC_t ch, new_ch;
-  int n;
   
   cur_suf = expand_node->next_level; ch = *cur_suf->str;
   next_p = (Suffix_Node_t **) &expand_nodes_256[ch].next_level; /* 指向第一个链表头 */
@@ -159,9 +153,7 @@ static void build_map_256(Expand_Node_t *expand_node)
   expand_node->next_level = map_256;
   expand_node->type = MAP_256;
 
-  for (n = 256, expand_node = map_256->expand_nodes; n; expand_node++, n--)
-    if (expand_node->next_level)
-      in_queue(queue, expand_node);
+  push_queue(map_256->expand_nodes, 256);
 }
 
 void build_map(Expand_Node_t *expand_node, Pat_Num_t ch_num)

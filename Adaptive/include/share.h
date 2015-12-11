@@ -58,8 +58,8 @@ typedef struct suffix_node {
 Suffix_Node_t *cut_head(Suffix_Node_t *suf_node, Pat_Len_t lsp);
 inline Bool_t same_str(Char_t const *s1, Char_t const *s2, Pat_Len_t len);
 inline int str_n_cmp(Char_t const *s1, Char_t const *s2, Pat_Len_t len);
+void push_queue(Expand_Node_t const *expand_node, Pat_Num_t num);
 void print_str(Char_t const *s, Pat_Len_t len, Char_t terminator);
-
 
 void print_suffix(Suffix_Node_t *cur_suf);
 

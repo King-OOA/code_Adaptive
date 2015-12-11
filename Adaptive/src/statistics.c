@@ -5,6 +5,8 @@
 
 #if DEBUG
 
+unsigned match_num;
+
 Str_Num_t type_num[] =
   {{"", 0}, {"single char", 0}, {"map 4", 0}, {"map 16", 0}, {"map 48", 0},
    {"map 256", 0}, {"single string", 0}, {"array", 0}, {"hash", 0}};
