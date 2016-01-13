@@ -38,6 +38,7 @@ typedef unsigned Hash_Value_t;
 #define MAX_PAT_LEN 255
 #define ALPHABET_SIZE 256
 #define MIN_PERCENT 1.0
+#define LLP 100
 #define POINTER_SIZE 8
 #define BITS_PER_BYTE 8
 #define SMALL_ARRAY_SIZE 4

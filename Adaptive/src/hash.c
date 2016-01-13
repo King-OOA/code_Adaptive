@@ -13,6 +13,7 @@
 #define L_BITS 6
 #define R_BITS 2
 #define SEED 50u
+#define LOAD_FACTOR 0.5
 
 static unsigned power2[] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096,
 			    8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576,
@@ -89,7 +90,7 @@ void build_hash(Expand_Node_t *expand_node, Pat_Num_t ndp, Pat_Len_t lsp)
   push_queue(hash_table->slots, hash_table->table_size);
 }
 
-/* Hash表只能确定一定不匹配的串,可能匹配的串需要由对应expand node的下一级来进一步判断 */
+/* Hash表只能过滤一定不匹配的串,可能匹配的串需要由对应expand node的下一级来进一步判断 */
 Expand_Node_t *match_hash(Hash_Table_t *hash_table, Char_t const **pos_p, Bool_t *is_pat_end)
 {
 #if DEBUG

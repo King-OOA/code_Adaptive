@@ -34,11 +34,11 @@ static Expand_Node_t *(*match_fun[]) (void *, Char_t const **, Bool_t *) =
 static Suffix_Node_t *make_suffix_node(Char_t const *pat, Pat_Len_t pat_len)
 {
      Suffix_Node_t *new_suf_node;
-     
+
      new_suf_node = VMALLOC(Suffix_Node_t, char, pat_len + 1);
      strcpy(new_suf_node->str, pat);
      new_suf_node->next = NULL;
-     
+
      return new_suf_node;
 }
 
@@ -48,7 +48,7 @@ static Suffix_Node_t *read_pats(FILE *pats_fp)
   Pat_Len_t pat_len;
   Char_t *line_break = NULL; /*换行符指针*/
   Suffix_Node_t *list_head = NULL, *new_suf_node = NULL; /* 链表头指针 */
-     
+
   while (fgets(buf, sizeof(buf), pats_fp)) {
     if (line_break = strchr(buf, '\n'))
       *line_break = '\0';
@@ -58,7 +58,7 @@ static Suffix_Node_t *read_pats(FILE *pats_fp)
       list_head = new_suf_node;
     }
   }
-  
+
   return list_head;
 }
 
@@ -67,7 +67,7 @@ static void remove_duplicates(Suffix_Node_t *pat_list)
 {
   Suffix_Node_t *left = pat_list, *right = left->next;
 
-  while (right) 
+  while (right)
     if (strcmp(left->str, right->str) == 0) {
       right = right->next; free(left->next); left->next = right;
     } else {
@@ -79,12 +79,12 @@ static Expand_Node_t *make_root(FILE *pats_fp)
 {
      Suffix_Node_t *pat_list;
      Expand_Node_t *root = CALLOC(1, Expand_Node_t);
-     
+
      pat_list = list_radix_sort(read_pats(pats_fp)); /* 先排序 */
      remove_duplicates(pat_list); /* 再去重 */
-    
+
      root->next_level = pat_list;
-     
+
      return root;
 }
 
@@ -93,14 +93,14 @@ static void get_ndp_and_lsp(Expand_Node_t const *expand_node, Pat_Num_t *ndp_p, 
   Suffix_Node_t *cur_suf, *left, *right;
   Pat_Len_t suf_len, lsp = MAX_PAT_LEN;
   Pat_Num_t ndp = 1;
-  
+
   /* 确定lsp */
   for (cur_suf = expand_node->next_level; cur_suf; cur_suf = cur_suf->next)
     if ((suf_len = strlen(cur_suf->str)) < lsp)
       lsp = suf_len;
-  
+
   *lsp_p = lsp;
-  
+
   /* 确定ndp */
   left = expand_node->next_level; right = left->next;
   while (right)
@@ -113,13 +113,19 @@ static void get_ndp_and_lsp(Expand_Node_t const *expand_node, Pat_Num_t *ndp_p, 
   *ndp_p = ndp;
 }
 
+extern unsigned total_nodes;
+
 static void choose_adaptor(Expand_Node_t *expand_node)
 {
   Pat_Num_t ndp; /* number of the distinct prefix */
   Pat_Len_t lsp; /* length of the shortest prefix */
-     
+
   get_ndp_and_lsp(expand_node, &ndp, &lsp);
-  
+
+#if DEBUG
+  total_nodes++;
+#endif
+
   if (lsp == 1) {
     build_map(expand_node, ndp);
   } else {
@@ -131,17 +137,21 @@ static void choose_adaptor(Expand_Node_t *expand_node)
 }
 
 extern unsigned match_num;
+extern Num_Num_t access_depth[LLP];
 
 static Bool_t match_round(Expand_Node_t *expand_node, Char_t const *text_p, Char_t *pat_buf)
 {
   Bool_t is_matched = FALSE, is_pat_end = FALSE;
   Char_t const *pos = text_p;
   Pat_Len_t pat_len;
-  
+  int depth = 0;
+
   while (expand_node && expand_node->type != END) {
     expand_node = match_fun[expand_node->type](expand_node->next_level, &pos, &is_pat_end);
-
+    
 #if DEBUG
+    depth++;
+
    if (is_pat_end) {
      match_num++;
      is_matched = TRUE;
@@ -151,11 +161,15 @@ static Bool_t match_round(Expand_Node_t *expand_node, Char_t const *text_p, Char
      pat_buf += pat_len;
      is_pat_end = FALSE;
     }
-#endif 
+#endif
   }
   
+#if DEBUG
+  access_depth[depth].num_1 = depth;
+  access_depth[depth].num_2++;
   *pat_buf = '\0';
-  
+#endif 
+
   return is_matched;
 }
 
@@ -171,19 +185,19 @@ int main(int argc, char **argv)
   Char_t opt;
   Char_t *text_file_name, *pats_file_name;
   Bool_t is_matched = FALSE;
-  
+
   /* 处理命令行参数 */
   pats_file_name = argv[1];	/* 模式集文件*/
   text_file_name = argv[2];	/* 文本文件 */
-  if (argc > 3) 
-    for (argv += 3; *argv && **argv == '-'; argv++) 
+  if (argc > 3)
+    for (argv += 3; *argv && **argv == '-'; argv++)
       while (opt = *++*argv)
 	switch (opt) {
 	case 'o' : show_match_results = TRUE; break;
 	case 's' : show_sta_results = TRUE; break;
 	default : fprintf(stderr, "非法命令行参数!\n"); exit(EXIT_FAILURE);
 	}
-     
+
 
   /* 预处理,构建自适应节点 */
   pats_fp = Fopen(pats_file_name, "r");
@@ -191,7 +205,7 @@ int main(int argc, char **argv)
   start = clock();
   root = make_root(pats_fp);	/* 构建根节点 */
   Fclose(pats_fp);
-     
+
   queue = make_queue();
   in_queue(queue, root);
   while (!queue_is_empty(queue))
@@ -212,28 +226,28 @@ int main(int argc, char **argv)
   end = clock();
   fprintf(stderr, "Done!  \n%f\n",
 	  (double) (end - start) / CLOCKS_PER_SEC);
-  
+
   /* 匹配文本*/
   fprintf(stderr, "\nMatching..."); fflush(stdout);
   start = clock();
   text_end = text_buf + file_size - 1;
-     
+
   for (text_p = text_buf; text_p < text_end; text_p++) {
     is_matched = match_round(root, text_p, pat_buf);
 #if DEBUG
-    if (is_matched && show_match_results) 
+    if (is_matched && show_match_results)
       printf("%ld: %s\n", text_p - text_buf + 1, pat_buf);
-#endif     
+#endif
   }
   end = clock();
   fprintf(stderr, "Done!  \n%f\n",
 	  (double) (end - start) / CLOCKS_PER_SEC);
-  
-  fprintf(stderr, "Total matched number: %u\n", match_num);
+
+  fprintf(stderr, "\nTotal matched number: %u\n", match_num);
 
 #if DEBUG
   if (show_sta_results)
     print_statistics(); /* 打印程序运行过程中的各种统计信息 */
-#endif 
+#endif
 
 }
