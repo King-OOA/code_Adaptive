@@ -6,6 +6,7 @@
 #define SHIFT 3
 #define MASK 0x7
 
+
 /* 生成size位的bitmap */
 unsigned char *create_bitmap(size_t size)
 {
@@ -40,6 +41,30 @@ void show_bytes(byte_p start, int len)
     for (i = 0; i < len; i++)
         printf(" %.2x", start[i]);
     putchar('\n');
+}
+
+/* 以2为底n的对数, n必须是2的幂 */
+int logn(unsigned long n)
+{
+  int i;
+
+  for (i = 0; n >>= 1; i++)
+    ;
+
+  return i;
+}
+
+
+/* 判断n是否是奇数 */
+int is_odd(long n)
+{
+  return n & 0x1;
+}
+
+/* 判断n是否是偶数 */
+int is_even(long n)
+{
+  return !(n & 0x1);
 }
 
 /* 小端机器返回1, 大端返回0 */

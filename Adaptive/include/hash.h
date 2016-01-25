@@ -4,7 +4,9 @@
 #include "share.h"
 
 typedef struct  hast_table {
+#if POWER
   UC_t power;
+#endif 
   Pat_Num_t table_size;
   Pat_Len_t lsp;
   Expand_Node_t slots[];

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <assert.h>
 #include <time.h>
+#include <math.h>
 #include "common.h"
 #include "textools.h"
 #include "makedata.h"
@@ -13,6 +14,7 @@
 #include "map.h"
 #include "sorter.h"
 #include "statistics.h"
+#include "binary.h"
 
 Queue_t *queue;
 

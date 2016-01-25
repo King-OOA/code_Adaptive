@@ -14,7 +14,7 @@ a.test.out:  $(OBJS)
 	$(CC) $(OBJS) -L$(LIBPATH) -lADT -lmakedata -lcommon  -lm -lbinary -ltextools -o $@
 	rm *.o
 
-main.o: main.c share.h hash.h common.h
+main.o: main.c share.h hash.h common.h binary.h sorter.h
 	$(CC) $(CFLAGS) $< -o $@
 
 share.o: share.c share.h common.h
