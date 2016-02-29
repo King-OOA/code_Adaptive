@@ -15,6 +15,107 @@ extern Num_Num_t map_size[];
 extern Str_Num_t type_num[];
 extern Str_Num_t fun_calls[];
 
+static Expand_Node_t *match_single_ch(Single_Ch_t *single_ch, Char_t const **pos_p, Bool_t *is_pat_end)
+{
+#if DEBUG
+  fun_calls[MATCH_SINGLE_CH].num++;
+#endif
+
+  if (**pos_p != single_ch->ch)
+    return NULL;
+
+  *is_pat_end = TRUE;//single_ch->pat_end_flag;
+  (*pos_p)++;
+
+  return &single_ch->expand_node;
+}
+
+static Expand_Node_t *match_map_4(Map_4_t *map_4, Char_t const **pos_p, Bool_t *is_pat_end)
+{
+#if DEBUG
+  fun_calls[MATCH_MAP_4].num++;
+#endif
+
+  Char_t t_ch = **pos_p, *key;	/* t_ch 为目标字符 */
+  char ch_num, i;
+
+  /* key是有序排列的 */
+  for (ch_num = map_4->ch_num, key = map_4->keys; ch_num && *key < t_ch; ch_num--, key++)
+    ;
+
+  if (ch_num == 0 || *key > t_ch) /* 匹配失败 */
+    return NULL;
+  
+  /* 匹配成功 */
+  i = key - map_4->keys;
+  *is_pat_end = test_bit(map_4->pat_end_flag, i);
+  (*pos_p)++;
+
+  return map_4->expand_nodes + i;
+}
+
+static Expand_Node_t *match_map_16(Map_16_t *map_16, Char_t const **pos_p, Bool_t *is_pat_end)
+{
+#if DEBUG
+  fun_calls[MATCH_MAP_16].num++;
+#endif
+
+  Char_t t_ch = **pos_p, key;
+  char low = 0, high = map_16->ch_num - 1, mid; /* 必须是有符号数 */
+
+  while (low <= high) {
+    mid = (low + high) >> 1;
+    key = map_16->keys[mid];
+    if (t_ch < key)
+      high = mid - 1;
+    else if (t_ch > key)
+      low = mid + 1;
+    else {
+      *is_pat_end = test_bit(map_16->pat_end_flag, mid);
+      (*pos_p)++;
+      return map_16->expand_nodes + mid;
+    }
+  }
+
+  return NULL;
+}
+
+static Expand_Node_t *match_map_48(Map_48_t *map_48, Char_t const **pos_p, Bool_t *is_pat_end)
+{
+#if DEBUG
+  fun_calls[MATCH_MAP_48].num++;
+#endif
+
+  UC_t t_ch = **pos_p;
+  int i;
+
+  if ((i = map_48->index[t_ch]) == -1)
+    return NULL;
+
+  *is_pat_end = test_bit(map_48->pat_end_flag, i);
+  (*pos_p)++;
+
+  return map_48->expand_nodes + i;
+}
+
+static Expand_Node_t *match_map_256(Map_256_t *map_256, Char_t const **pos_p, Bool_t *is_pat_end)
+{
+#if DEBUG
+  fun_calls[MATCH_MAP_256].num++;
+#endif
+
+  UC_t t_ch = **pos_p;
+  Expand_Node_t *expand_node = map_256->expand_nodes + t_ch;
+
+  *is_pat_end = test_bit(map_256->pat_end_flag, t_ch);
+
+  if (expand_node->next_level || is_pat_end)
+    (*pos_p)++;
+
+  return expand_node;
+}
+
+/* 所有后缀的首字符相同 */
 void build_single_ch(Expand_Node_t *expand_node)
 {
     Suffix_Node_t *cur_suf, *next_suf, **next_p;
@@ -23,19 +124,18 @@ void build_single_ch(Expand_Node_t *expand_node)
     cur_suf = expand_node->next_level;
     single_ch->ch = *cur_suf->str;
     next_p = (Suffix_Node_t **) &single_ch->expand_node.next_level;
-
+ 
     for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) {
       next_suf = cur_suf->next;
-      if (cur_suf = cut_head(cur_suf, 1)) {
-	*next_p = cur_suf; next_p = &cur_suf->next;
-      } else
-	single_ch->pat_end_flag = TRUE;
+      if ((cur_suf = cut_head(cur_suf, 1))) { /* 如果当前后缀去掉首字符后还存在 */
+	*next_p = cur_suf; next_p = &cur_suf->next; /* 则将去掉首字符的后缀,插入新的sing_ch中 */
+      } 
     }
 
     *next_p = NULL;
 
     expand_node->next_level = single_ch;
-    expand_node->type = SINGLE_CH;
+    expand_node->match_fun = (Match_Fun_t) match_single_ch;
 
     push_queue(&single_ch->expand_node, 1);
 }
@@ -47,26 +147,25 @@ static void build_map_##n(Expand_Node_t *expand_node, Pat_Num_t ch_num) \
   Suffix_Node_t *cur_suf, *next_suf, **next_p;				\
   Map_##n##_t *map_##n;							\
   Expand_Node_t *expand_nodes_##n;					\
-  Char_t *keys;								\
-  int i = 0;								\
+  Char_t *keys, cur_ch, pre_ch = 0;					\
+  int i = -1;								\
 									\
   map_##n = CALLOC(1, Map_##n##_t);					\
   map_##n->ch_num = ch_num;						\
   keys = map_##n->keys;							\
   expand_nodes_##n = map_##n->expand_nodes;				\
-  /* 把第一个串的第一个字符拷到第一个key中 */				\
-  cur_suf = expand_node->next_level;					\
-  keys[i] = *cur_suf->str;						\
-  next_p = (Suffix_Node_t **) &expand_nodes_##n[i].next_level;		\
-									\
+  next_p = (Suffix_Node_t **) &expand_nodes_##n[0].next_level;		\
+ /*具有相同首字符的后缀,连接在一起,形成段,每段对应keys中的一个字符*/	\
   for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) { \
     next_suf = cur_suf->next;						\
-    if (*cur_suf->str != keys[i]) {					\
-      keys[++i] = *cur_suf->str; *next_p = NULL; /* 当前链表截止 */	\
-      next_p = (Suffix_Node_t **) &expand_nodes_##n[i].next_level;	\
+    /*判断是否是新一段的开始*/						\
+    if ((cur_ch = *cur_suf->str) != pre_ch) {				\
+      keys[++i] = cur_ch; *next_p = NULL; /* 当前链表截止 */		\
+      next_p = (Suffix_Node_t **) &expand_nodes_##n[i].next_level; /*新一段的链表头 */ \
+      pre_ch = cur_ch;							\
     }									\
-									\
-    if (cur_suf = cut_head(cur_suf, 1)) {				\
+    /* 将当前后缀插入到对应exp_node链表 */				\
+    if ((cur_suf = cut_head(cur_suf, 1))) {				\
       *next_p = cur_suf; next_p = &cur_suf->next;			\
     } else								\
       set_bit(map_##n->pat_end_flag, i); /* 是模式尾 */			\
@@ -74,7 +173,7 @@ static void build_map_##n(Expand_Node_t *expand_node, Pat_Num_t ch_num) \
 									\
   *next_p = NULL;                                                       \
   expand_node->next_level = map_##n;					\
-  expand_node->type = MAP_##n;						\
+  expand_node->match_fun = (Match_Fun_t) match_map_##n;			\
   									\
   push_queue(map_##n->expand_nodes, ch_num);                            \
 }
@@ -89,36 +188,31 @@ static void build_map_48(Expand_Node_t *expand_node, Pat_Num_t ch_num)
   Map_48_t *map_48 = CALLOC(1, Map_48_t);
   Expand_Node_t *expand_nodes_48 = map_48->expand_nodes;
   char *index = map_48->index;
-  UC_t ch;
-  int i = 0;
+  UC_t cur_ch, pre_ch = 0;
+  int i = -1;
 
   memset(index, -1, 256);
-
-  cur_suf = expand_node->next_level;
-  ch = *cur_suf->str; index[ch] = i;
-  next_p = (Suffix_Node_t **) &expand_nodes_48[i].next_level;
+  next_p = (Suffix_Node_t **) &expand_nodes_48[0].next_level; /* 随便初始化 */
 
   for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) {
     next_suf = cur_suf->next;
-    ch = *cur_suf->str;
-
-    if (index[ch] != i) {
-      assert(index[ch] == -1);
-      index[ch] = ++i;
+    /* 是否是新一段开始 */
+    if ((cur_ch = *cur_suf->str) != pre_ch) {
+      index[cur_ch] = ++i;
       *next_p = NULL; next_p = (Suffix_Node_t **) &expand_nodes_48[i].next_level;
+      pre_ch = cur_ch;
     }
 
-    if (cur_suf = cut_head(cur_suf, 1)) {
+    if ((cur_suf = cut_head(cur_suf, 1))) {
       *next_p = cur_suf; next_p = &cur_suf->next;
     } else  /* 模式串尾 */
       set_bit(map_48->pat_end_flag, i);
   }
 
-  assert(ch_num-1 == i);
   *next_p = NULL;
 
   expand_node->next_level = map_48;
-  expand_node->type = MAP_48;
+  expand_node->match_fun = (Match_Fun_t) match_map_48;
 
   push_queue(map_48->expand_nodes, ch_num);
 }
@@ -128,30 +222,29 @@ static void build_map_256(Expand_Node_t *expand_node)
   Suffix_Node_t *cur_suf, *next_suf, **next_p;
   Map_256_t *map_256 = CALLOC(1, Map_256_t);
   Expand_Node_t *expand_nodes_256 = map_256->expand_nodes;
-  UC_t ch, new_ch;
+  UC_t pre_ch = 0, cur_ch;
 
-  cur_suf = expand_node->next_level; ch = *cur_suf->str;
-  next_p = (Suffix_Node_t **) &expand_nodes_256[ch].next_level; /* 指向第一个链表头 */
+  next_p = (Suffix_Node_t **) &expand_nodes_256[0].next_level;
 
   for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) {
     next_suf = cur_suf->next;
-    new_ch = *cur_suf->str;
 
-    if (new_ch != ch) { /* 终止上一个链表,跳转到新链表头 */
-      *next_p = NULL; next_p = (Suffix_Node_t **) &expand_nodes_256[new_ch].next_level;
-      ch = new_ch;
+    if ((cur_ch = *cur_suf->str) != pre_ch) { /* 终止上一个链表,跳转到新链表头 */
+      *next_p = NULL;
+      next_p = (Suffix_Node_t **) &expand_nodes_256[cur_ch].next_level;
+      pre_ch = cur_ch;
     }
 
-    if (cur_suf = cut_head(cur_suf, 1)) {
+    if ((cur_suf = cut_head(cur_suf, 1))) {
       *next_p = cur_suf; next_p = &cur_suf->next;
     } else
-      set_bit(map_256->pat_end_flag, ch);
+      set_bit(map_256->pat_end_flag, cur_ch);
   }
 
   *next_p = NULL;
 
   expand_node->next_level = map_256;
-  expand_node->type = MAP_256;
+  expand_node->match_fun = (Match_Fun_t) match_map_256;
 
   push_queue(map_256->expand_nodes, 256);
 }
@@ -162,6 +255,8 @@ void build_map(Expand_Node_t *expand_node, Pat_Num_t ch_num)
   map_size[ch_num].num_1 = ch_num;
   map_size[ch_num].num_2++;
 #endif
+
+  static int counter = 0;
 
   if (ch_num == 1) {	/* 单个字符 */
     build_single_ch(expand_node);
@@ -174,6 +269,7 @@ void build_map(Expand_Node_t *expand_node, Pat_Num_t ch_num)
     type_num[MAP_4].num++;
 #endif
   } else if (ch_num <= 16) {
+    printf("%d\n", ++counter);
     build_map_16(expand_node, ch_num);
 #if DEBUG
     type_num[MAP_16].num++;
@@ -189,103 +285,6 @@ void build_map(Expand_Node_t *expand_node, Pat_Num_t ch_num)
     type_num[MAP_256].num++;
 #endif
   }
-}
-
-Expand_Node_t *match_single_ch(Single_Ch_t *single_ch, Char_t const **pos_p, Bool_t *is_pat_end)
-{
-#if DEBUG
-  fun_calls[MATCH_SINGLE_CH].num++;
-#endif
-
- if (**pos_p != single_ch->ch)
-    return NULL;
-
-  *is_pat_end = single_ch->pat_end_flag;
-  (*pos_p)++;
-
-  return &single_ch->expand_node;
-}
-
-Expand_Node_t *match_map_4(Map_4_t *map_4, Char_t const **pos_p, Bool_t *is_pat_end)
-{
-#if DEBUG
-  fun_calls[MATCH_MAP_4].num++;
-#endif
-
-  Char_t ch = **pos_p, *key;
-  char ch_num, i;
-
-  /* key是有序排列的 */
-  for (ch_num = map_4->ch_num, key = map_4->keys; ch_num && *key < ch; ch_num--, key++)
-    ;
-
-  if (ch_num == 0 || *key > ch) /* 匹配失败 */
-    return NULL;
-
-  i = key - map_4->keys;
-  *is_pat_end = test_bit(map_4->pat_end_flag, i);
-  (*pos_p)++;
-
-  return map_4->expand_nodes + i;
-}
-
-Expand_Node_t *match_map_16(Map_16_t *map_16, Char_t const **pos_p, Bool_t *is_pat_end)
-{
-#if DEBUG
-  fun_calls[MATCH_MAP_16].num++;
-#endif
-
-  Char_t *keys = map_16->keys, ch = **pos_p;
-  char low = 0, high = map_16->ch_num - 1, mid;
-
-  while (low <= high) {
-    mid = (low + high) >> 1;
-    if (ch == keys[mid]) {
-      *is_pat_end = test_bit(map_16->pat_end_flag, mid);
-      (*pos_p)++;
-      return map_16->expand_nodes + mid;
-    }  else if (ch < keys[mid])
-      high = mid - 1;
-    else
-      low = mid + 1;
-  }
-
-  return NULL;
-}
-
-Expand_Node_t *match_map_48(Map_48_t *map_48, Char_t const **pos_p, Bool_t *is_pat_end)
-{
-#if DEBUG
-  fun_calls[MATCH_MAP_48].num++;
-#endif
-
-  UC_t ch = **pos_p;
-  char i;
-
-  if ((i = map_48->index[ch]) == -1)
-    return NULL;
-
-  *is_pat_end = test_bit(map_48->pat_end_flag, i);
-  (*pos_p)++;
-
-  return map_48->expand_nodes + i;
-}
-
-Expand_Node_t *match_map_256(Map_256_t *map_256, Char_t const **pos_p, Bool_t *is_pat_end)
-{
-#if DEBUG
-  fun_calls[MATCH_MAP_256].num++;
-#endif
-
-  UC_t ch = **pos_p;
-  Expand_Node_t *expand_node = map_256->expand_nodes + ch;
-
-  *is_pat_end = test_bit(map_256->pat_end_flag, ch);
-
-  if (expand_node->next_level || is_pat_end)
-    (*pos_p)++;
-
-  return expand_node;
 }
 
 #if DEBUG

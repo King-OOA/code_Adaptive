@@ -4,16 +4,12 @@
 #include "share.h"
 
 typedef struct  hast_table {
-#if POWER
-  UC_t power;
-#endif 
   Pat_Num_t table_size;
-  Pat_Len_t lsp;
-  Expand_Node_t slots[];
+  Pat_Len_t str_len;
+  Expand_Node_t expand_nodes[];
 } Hash_Table_t;
 
-void build_hash(Expand_Node_t *expand_node, Pat_Num_t ndp, Pat_Len_t lsp);
+void build_hash_table(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_len);
 void print_hash(Hash_Table_t *hash_table);
-Expand_Node_t *match_hash(Hash_Table_t *hash_table, Char_t const **pos_p, Bool_t *is_pat_end);
 
 #endif 

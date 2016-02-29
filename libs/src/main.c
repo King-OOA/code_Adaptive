@@ -38,21 +38,27 @@ struct a {
   struct b array[0];
 };
 
+
+void test()
+{
+  int local;
+
+  printf("%p\n", &local);
+}
+
 int main(int argc, char **argv)
 {
-  
-  char * buf = malloc(100);
-  char *s = "fasfasf";
-  
-  strcpy(buf, s);
+
+    test();
+
 
   //  printf("key:%d, value: %d\n", p->array[1].key, p->array[8].value);
   //printf("key:%d, value: %d\n", p->array[1].key, p->array[8].value);
   
   
-  //str.p = s;
+  //str.p = S;
   
-  
+
 }
 
 

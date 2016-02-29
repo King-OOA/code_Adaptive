@@ -1,6 +1,7 @@
 #ifndef SHARE_H
 #define SHARE_H
 
+/* 基本类型定义 */
 typedef unsigned char UC_t;
 typedef char Char_t;
 typedef UC_t Pat_Len_t;
@@ -9,6 +10,7 @@ typedef char Bool_t;
 typedef UC_t Type_t;
 typedef UC_t Flag_t;
 typedef unsigned Hash_Value_t;
+
 /* 结构类型 */
 #define TYPE_NUM    9
 #define END         0
@@ -32,7 +34,6 @@ typedef unsigned Hash_Value_t;
 #define MATCH_BINARY_ARRAY  7
 #define MATCH_HASH          8
 
-#define NUM_TO_BUILD_ARRAY 50
 #define TRUE 1
 #define FALSE 0
 #define MAX_PAT_LEN 255
@@ -45,9 +46,22 @@ typedef unsigned Hash_Value_t;
 
 #define DEBUG 1
 
+
+/* hash_table 参数 */
+#define L_BITS 6
+#define R_BITS 2
+#define SEED 50u
+#define LOAD_FACTOR 0.6
+
+
+#define NUM_TO_BUILD_HASH 50
+
+
+
+typedef struct expand_node *(*Match_Fun_t) (void *, Char_t const **, Bool_t *);
 typedef struct expand_node {
-  Type_t type;
   void *next_level;
+  Match_Fun_t match_fun;
 } Expand_Node_t;
 
 typedef struct suffix_node {

@@ -16,7 +16,7 @@ Suffix_Node_t *cut_head(Suffix_Node_t *suf_node, Pat_Len_t lsp)
     free(suf_node);
     return NULL;
   } 
-  
+
   memmove(suf_node->str, suf_node->str + lsp, suf_len - lsp + 1);
   
   return suf_node;
@@ -27,7 +27,7 @@ inline Bool_t same_str(Char_t const *s1, Char_t const *s2, Pat_Len_t len)
   while (len && *s1 == *s2) 
     len--, s1++, s2++;
   
-  return len == 0 ? TRUE : FALSE;
+  return !len;
 }
 
 inline int str_n_cmp(Char_t const *s1, Char_t const *s2, Pat_Len_t len)

@@ -20,7 +20,7 @@ Str_Num_t fun_calls[] = {
   {"array binary match", 0}, {"hash match", 0}};
 
 Num_Num_t map_size[ALPHABET_SIZE];
-Num_Num_t array_size[NUM_TO_BUILD_ARRAY+1]; /* 0元素不用 */
+Num_Num_t array_size[NUM_TO_BUILD_HASH+1]; /* 0元素不用 */
 Num_Num_t access_depth[LLP];
  
 static int str_num_cmp(const void *elmt_1, const void *elmt_2)
@@ -84,7 +84,7 @@ void print_statistics(void)
   qsort(access_depth, LLP, sizeof(Num_Num_t), num_num_cmp);
   digits = get_digits(access_depth[LLP-1].num_2); /* 最大数的位数 */
   /* 从大到小打印 */
-  for (i = LLP - 1; num = access_depth[i].num_2; i--)
+  for (i = LLP - 1; (num = access_depth[i].num_2); i--)
     if ((percent = ((double) num / total_num) * 100.0) > 0)
       printf("%2u: %*u (%5.2f%%)\n", access_depth[i].num_1, digits, num, percent);
 
@@ -105,18 +105,18 @@ void print_statistics(void)
   qsort(map_size, ALPHABET_SIZE, sizeof(Num_Num_t), num_num_cmp);
   digits = get_digits(map_size[ALPHABET_SIZE-1].num_2); /* 最大数的位数 */
   /* 从大到小打印 */
-  for (i = ALPHABET_SIZE - 1; num = map_size[i].num_2; i--)
+  for (i = ALPHABET_SIZE - 1; (num = map_size[i].num_2); i--)
     if ((percent = ((double) num / total_num) * 100.0) > MIN_PERCENT)
       printf("%2u: %*u (%5.2f%%)\n", map_size[i].num_1, digits, num, percent);
   
   /* 打印不同长度数组的数量 */
   printf("\nNumber of Array with Different Size:\n\n");
-  for (total_num = 0, i = 1; i < NUM_TO_BUILD_ARRAY + 1; i++)
+  for (total_num = 0, i = 1; i < NUM_TO_BUILD_HASH + 1; i++)
     total_num += array_size[i].num_2;
-  qsort(array_size, NUM_TO_BUILD_ARRAY + 1, sizeof(Num_Num_t), num_num_cmp);
-  digits = get_digits(array_size[NUM_TO_BUILD_ARRAY].num_2); /* 最大数的位数 */
+  qsort(array_size, NUM_TO_BUILD_HASH + 1, sizeof(Num_Num_t), num_num_cmp);
+  digits = get_digits(array_size[NUM_TO_BUILD_HASH].num_2); /* 最大数的位数 */
   /* 从大到小打印 */
-  for (i = NUM_TO_BUILD_ARRAY; num = array_size[i].num_2; i--)
+  for (i = NUM_TO_BUILD_HASH; (num = array_size[i].num_2); i--)
     if ((percent = ((double) num / total_num) * 100.0) > MIN_PERCENT)
       printf("%2u: %*u (%5.2f%%)\n", array_size[i].num_1, digits, num, percent);
 }

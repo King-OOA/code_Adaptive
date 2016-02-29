@@ -15,33 +15,29 @@ static int Seed;
 #define hi (Seed / ACMq)
 #define lo (Seed % ACMq)
 
-void cre_rand_text(const char *filename, long text_len, int low, int high)
+/* 产生长为text_len,字母表范围在low~high之间的随机文本 */
+void cre_rand_text(const char *filename, Pat_Num_t text_len, Char_t low,  Char_t high)
 {
      FILE *fp_text = Fopen(filename, "w");
-
-     if (low < 0 || low > high || high > 255) {
-         fprintf(stderr, "Illegal characters set!\n");
-         exit(EXIT_FAILURE);
-     }
      
      srand(time(NULL));
      
      while (text_len--)
-         putc(rand_range(low, high), fp_text);
+       putc(rand_range(low, high), fp_text);
 	
      Fclose(fp_text);
 }
 
-void cre_rand_pats(const char *filename, long pat_num, int min_pat_len, int max_pat_len, int low, int high)
+void cre_rand_pats(const char *filename, Pat_Num_t pat_num, Pat_Len_t min_pat_len, Pat_Len_t max_pat_len, Char_t low, Char_t high)
 {
     FILE *fp_text = Fopen(filename, "w");
-    int pat_len;
-    int ch;
+    Pat_Len_t pat_len;
+    Char_t ch;
 
     srand(time(NULL));
 
     while (pat_num--) {
-        pat_len = rand_range(min_pat_len, max_pat_len); 
+        pat_len = rand_range(min_pat_len, max_pat_len);
         while (pat_len--) {
             do {
                 ch = rand_range(low, high);
@@ -119,7 +115,7 @@ static int fst = 1;
 /*     fprintf (stderr,"File %s successfully generated\n",file_name); */
 /* } */
 
-int aleat (int top)
+int aleat(int top)
 {
     long test;
     struct timeval t;
@@ -185,35 +181,19 @@ static void parse_forbid(char const *forbid, char ** forbide)
 }
 
 /* 从文件file中, 抽取pat_num个模式串, 构成模式串文件pat_file, 串长分布:min_pat_len~max_pat_len, 禁止的字符在保存在forbid中 */
-void extract_pats(char const *text_filename, long pat_num, int min_pat_len, int max_pat_len, char const *pat_filename, char const *forbid)
+void extract_pats(char const *text_filename, Pat_Num_t pat_num, Pat_Len_t min_pat_len, Pat_Len_t max_pat_len, char const *pat_filename, char const *forbid)
 {
-    int pat_len, n, file_len;
-    struct stat sdata;
+    Pat_Num_t pat_len;
+    File_len_t file_len, starting_pos;
     FILE *ifile, *ofile;
     unsigned char *buff;
     char *forbide = NULL;
-    
-    if (stat(text_filename, &sdata) != 0) {
-        fprintf(stderr, "Error: cannot stat file %s\n", text_filename);
-        exit(EXIT_FAILURE);
-    }
-    
-    file_len = sdata.st_size; 	/* length of file */
+    Pat_Len_t i;
 
-    if (min_pat_len <= 0 || max_pat_len <= 0 || min_pat_len > max_pat_len || max_pat_len > file_len) {
-        fprintf(stderr,"Error: pat length must be >= 1 and <= file length");
-        exit(EXIT_FAILURE);
-    }
-
-    if (pat_num < 1) {
-        fprintf(stderr, "Error: number of patterns must be >= 1\n");
-        exit(EXIT_FAILURE);
-    }
-     
     parse_forbid(forbid, &forbide);
 
     ifile = Fopen (text_filename, "rb");
-
+    file_len = get_file_size(ifile);
     buff = MALLOC(file_len, unsigned char);
     
     if (fread (buff, file_len, 1, ifile) != 1)  { /* read the whole file into buf */
@@ -225,8 +205,7 @@ void extract_pats(char const *text_filename, long pat_num, int min_pat_len, int 
 
     ofile = Fopen(pat_filename, "w");
 
-    for (n = 0; n < pat_num; n++) {
-        int starting_pos, i;
+    while (pat_num--) {
         pat_len = rand_range(min_pat_len, max_pat_len);
         do { /*对每一个产生的起始位置,检查该位置的pat是否包含禁止字符,如果包含,则重新产生一个起始位置,直到该位置的pat不包含任何禁止字符 */
             starting_pos = aleat(file_len - pat_len + 1);
@@ -247,20 +226,20 @@ void extract_pats(char const *text_filename, long pat_num, int min_pat_len, int 
     free(buff); free(forbide);
 }
 
-//static double cal_sd(patset_t *pat_set);
-static void ins_pat(patnode_t *, patset_t *);
-static void read_pats(FILE *, patset_t *);
+//static double cal_sd(Pat_Set_t *pat_set);
+static void ins_pat(Pat_Node_t *, Pat_Set_t *);
+static void read_pats(FILE *, Pat_Set_t *);
 
 /* 构建集数据结构 */
-patset_t *cre_pat_set(const char *pats_file_name)
+Pat_Set_t *cre_pat_set(const char *pats_file_name)
 {
     FILE *fp_pats; /*模式串文件*/
-    patset_t *pat_set;
+    Pat_Set_t *pat_set;
      
     fp_pats = Fopen(pats_file_name, "rb");
 
-    pat_set = MALLOC(1, patset_t);
-    pat_set->pats_file = strdup(pats_file_name);
+    pat_set = MALLOC(1, Pat_Set_t);
+    pat_set->pats_file_name = strdup(pats_file_name);
     pat_set->pat_list = NULL;
     pat_set->total_pats = 0;
     pat_set->min_pat_len = MAX_PAT_LEN;
@@ -276,13 +255,14 @@ patset_t *cre_pat_set(const char *pats_file_name)
     return pat_set;
 }
 
-static double cal_sd(patset_t *); /*计算标准差*/
-/* 依次读取模式串 */
-static void read_pats(FILE *fp_pats, patset_t *pat_set)
+static double cal_sd(Pat_Set_t *); /*计算标准差*/
+
+/* 按行读取模式串 */
+static void read_pats(FILE *fp_pats, Pat_Set_t *pat_set)
 {
     char buf[MAX_PAT_LEN+1]; /*模式串缓存，最大1000个字符，包括换行符*/
-    int pat_len;
-    long pats_readed = 0; /*已经读入的模式数量*/
+    Pat_Len_t pat_len;
+    Pat_Num_t pats_readed = 0; /*已经读入的模式数量*/
     char *line_break; /*换行符指针*/
 
     while (fgets(buf, sizeof(buf), fp_pats)) {
@@ -301,19 +281,20 @@ static void read_pats(FILE *fp_pats, patset_t *pat_set)
     pat_set->pat_len_sd = cal_sd(pat_set);
 }
 
-patnode_t *cre_pat_node(const char *pat_str)
+Pat_Node_t *cre_pat_node(const char *pat_str)
 {
-    patnode_t *new_pat_node =  MALLOC(1, patnode_t);
+    Pat_Node_t *new_pat_node =  MALLOC(1, Pat_Node_t);
     new_pat_node->pat_str = strdup(pat_str);
     new_pat_node->next = NULL;
 
     return new_pat_node;
 }
 
-static void ins_pat(patnode_t *pat_node, patset_t *pat_set)
+/* 将模式节点插入到模式集中 */
+static void ins_pat(Pat_Node_t *pat_node, Pat_Set_t *pat_set)
 {
-    static patnode_t *tail = NULL; /*静态变量保存模式链表尾指针*/
-    int len;
+    static Pat_Node_t *tail = NULL; /*静态变量保存模式链表尾指针*/
+    Pat_Len_t len;
 
     if (pat_set->total_pats == 0) { /*模式集为空*/
         pat_set->pat_list = pat_node;/*插入到头*/
@@ -329,9 +310,10 @@ static void ins_pat(patnode_t *pat_node, patset_t *pat_set)
         pat_set->max_pat_len = len;
 }
 
-void des_pat_set(patset_t *pat_set) /*销毁模式集合*/
+/*销毁模式集合*/
+void des_pat_set(Pat_Set_t *pat_set)
 {
-    patnode_t *p, *next;
+    Pat_Node_t *p, *next;
 
     /*依次销毁串链表的每个节点*/
     for (p = pat_set->pat_list; p; p = next) { 
@@ -340,14 +322,14 @@ void des_pat_set(patset_t *pat_set) /*销毁模式集合*/
         free(p); /*销毁模式节点*/
     }
 
-    free(pat_set->pats_file);
+    free(pat_set->pats_file_name);
     free(pat_set); /*销毁模式集本身*/
 }
 
-static double cal_sd(patset_t *pat_set) /*计算标准差*/
+static double cal_sd(Pat_Set_t *pat_set) /*计算标准差*/
 {
      double sd = 0;
-     patnode_t *p;
+     Pat_Node_t *p;
 
      for (p = pat_set->pat_list; p; p = p->next)
          sd += pow(strlen(p->pat_str) - pat_set->mean_pat_len, 2);
@@ -358,14 +340,14 @@ static double cal_sd(patset_t *pat_set) /*计算标准差*/
 /*print the pat set info*/
 #ifdef DEBUG
 
-void print_pat_set(const patset_t *pat_set, int max) 
+void print_pat_set(const Pat_Set_t *pat_set, int max) 
 {
-    patnode_t *p;
+    Pat_Node_t *p;
     int num;
     int i;
 
     printf("pats file: %s\n total pats: %ld\n max len: %d min len: %d mean len: %.2f sd: %.2f total len: %ld \n",
-            pat_set->pats_file, 
+            pat_set->pats_file_name, 
             pat_set->total_pats,
             pat_set->max_pat_len, pat_set->min_pat_len, pat_set->mean_pat_len, pat_set->pat_len_sd, pat_set->total_pat_len
             );

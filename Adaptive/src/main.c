@@ -6,7 +6,7 @@
 #include <math.h>
 #include "common.h"
 #include "textools.h"
-#include "makedata.h"
+//#include "makedata.h"
 #include "hash.h"
 #include "share.h"
 #include "queue.h"
@@ -18,26 +18,11 @@
 
 Queue_t *queue;
 
-typedef Expand_Node_t * (* Match_Fun_t)(void *, Char_t const **, Bool_t *);
-
-static Expand_Node_t *(*match_fun[]) (void *, Char_t const **, Bool_t *) =
-{
-     NULL,
-     (Match_Fun_t) match_single_ch,
-     (Match_Fun_t) match_map_4,
-     (Match_Fun_t) match_map_16,
-     (Match_Fun_t) match_map_48,
-     (Match_Fun_t) match_map_256,
-     (Match_Fun_t) match_single_str,
-     (Match_Fun_t) match_array,
-     (Match_Fun_t) match_hash
-};
-
 static Suffix_Node_t *make_suffix_node(Char_t const *pat, Pat_Len_t pat_len)
 {
      Suffix_Node_t *new_suf_node;
 
-     new_suf_node = VMALLOC(Suffix_Node_t, char, pat_len + 1);
+     new_suf_node = VMALLOC(Suffix_Node_t, char, pat_len);
      strcpy(new_suf_node->str, pat);
      new_suf_node->next = NULL;
 
@@ -52,64 +37,51 @@ static Suffix_Node_t *read_pats(FILE *pats_fp)
   Suffix_Node_t *list_head = NULL, *new_suf_node = NULL; /* 链表头指针 */
 
   while (fgets(buf, sizeof(buf), pats_fp)) {
-    if (line_break = strchr(buf, '\n'))
+    if ((line_break = strchr(buf, '\n')))
       *line_break = '\0';
-    if (pat_len = strlen(buf)) {
-      new_suf_node = make_suffix_node(buf, pat_len);
-      new_suf_node->next = list_head;
-      list_head = new_suf_node;
+    if ((pat_len = strlen(buf))) { /* 必须是非空模式串 */
+      new_suf_node = make_suffix_node(buf, pat_len+1); /* buf末尾包含'\0' */
+      new_suf_node->next = list_head; /* 挂到链表头 */
+      list_head = new_suf_node; /* 新连表头 */
     }
   }
 
   return list_head;
 }
 
-/* 有序链表去重,头节点一定保留 */
+/* 有序链表去重,头节点一定会保留 */
 static void remove_duplicates(Suffix_Node_t *pat_list)
 {
   Suffix_Node_t *left = pat_list, *right = left->next;
 
   while (right)
-    if (strcmp(left->str, right->str) == 0) {
+    if (strcmp(left->str, right->str) == 0) { /* 模式串不等长,均以'\0'结尾*/
       right = right->next; free(left->next); left->next = right;
     } else {
       left = right; right = left->next;
     }
 }
 
-static Expand_Node_t *make_root(FILE *pats_fp)
-{
-     Suffix_Node_t *pat_list;
-     Expand_Node_t *root = CALLOC(1, Expand_Node_t);
-
-     pat_list = list_radix_sort(read_pats(pats_fp)); /* 先排序 */
-     remove_duplicates(pat_list); /* 再去重 */
-
-     root->next_level = pat_list;
-
-     return root;
-}
-
-static void get_ndp_and_lsp(Expand_Node_t const *expand_node, Pat_Num_t *ndp_p, Pat_Len_t *lsp_p)
+static void get_ndp_and_lss(Expand_Node_t const *expand_node, Pat_Num_t *ndp_p, Pat_Len_t *lss_p)
 {
   Suffix_Node_t *cur_suf, *left, *right;
-  Pat_Len_t suf_len, lsp = MAX_PAT_LEN;
+  Pat_Len_t suf_len, lss = MAX_PAT_LEN;
   Pat_Num_t ndp = 1;
 
-  /* 确定lsp */
+  /* 第一遍,确定lss */
   for (cur_suf = expand_node->next_level; cur_suf; cur_suf = cur_suf->next)
-    if ((suf_len = strlen(cur_suf->str)) < lsp)
-      lsp = suf_len;
+    if ((suf_len = strlen(cur_suf->str)) < lss)
+      lss = suf_len;
 
-  *lsp_p = lsp;
+  *lss_p = lss;
 
-  /* 确定ndp */
+  /* 第二遍,确定ndp */
   left = expand_node->next_level; right = left->next;
   while (right)
-    if (same_str(left->str, right->str, lsp))
+    if (same_str(left->str, right->str, lss))
       right = right->next;
     else {
-      left = right; right = left->next; ndp++;
+      left = right; right = right->next; ndp++;
     }
 
   *ndp_p = ndp;
@@ -120,36 +92,36 @@ extern unsigned total_nodes;
 static void choose_adaptor(Expand_Node_t *expand_node)
 {
   Pat_Num_t ndp; /* number of the distinct prefix */
-  Pat_Len_t lsp; /* length of the shortest prefix */
+  Pat_Len_t lss; /* length of the shortest suffix */
 
-  get_ndp_and_lsp(expand_node, &ndp, &lsp);
+  get_ndp_and_lss(expand_node, &ndp, &lss); 
 
 #if DEBUG
   total_nodes++;
 #endif
-
-  if (lsp == 1) {
+  /* 自适应策略 */
+  if (lss == 1) { /* 单字符*/
     build_map(expand_node, ndp);
-  } else {
-    if (ndp < NUM_TO_BUILD_ARRAY)
-      build_array(expand_node, ndp, lsp);
+  } else { /* 多字符 */
+    if (ndp < NUM_TO_BUILD_HASH)
+      build_array(expand_node, ndp, lss);
     else
-      build_hash(expand_node, ndp, lsp);
+      build_hash_table(expand_node, ndp, lss);
   }
 }
 
 extern unsigned match_num;
 extern Num_Num_t access_depth[LLP];
 
-static Bool_t match_round(Expand_Node_t *expand_node, Char_t const *text_p, Char_t *pat_buf)
+static Bool_t match_round(Expand_Node_t *expand_node, Char_t const *match_entr, Char_t *pat_buf)
 {
   Bool_t is_matched = FALSE, is_pat_end = FALSE;
-  Char_t const *pos = text_p;
+  Char_t const *p = match_entr;
   Pat_Len_t pat_len;
   int depth = 0;
 
-  while (expand_node && expand_node->type != END) {
-    expand_node = match_fun[expand_node->type](expand_node->next_level, &pos, &is_pat_end);
+  while (expand_node && expand_node->next_level) { /* 当前匹配成功且不是叶节点时,继续 */
+    expand_node = expand_node->match_fun(expand_node->next_level, &p, &is_pat_end);
     
 #if DEBUG
     depth++;
@@ -157,9 +129,9 @@ static Bool_t match_round(Expand_Node_t *expand_node, Char_t const *text_p, Char
    if (is_pat_end) {
      match_num++;
      is_matched = TRUE;
-     pat_len = pos - text_p;
+     pat_len = p - match_entr;
      *pat_buf++ = ' ';
-     memcpy(pat_buf, text_p, pat_len);
+     memcpy(pat_buf, match_entr, pat_len);
      pat_buf += pat_len;
      is_pat_end = FALSE;
     }
@@ -181,36 +153,42 @@ int main(int argc, char **argv)
   Expand_Node_t *root;
   size_t file_size;
   clock_t start, end;
-  Char_t *text_buf, *text_p, *text_end;;
-  Char_t pat_buf[1000];
-  Bool_t show_match_results = FALSE, show_sta_results = FALSE;
+  Char_t *text_buf, *match_entr, *text_end;;
+  Char_t pat_buf[1000]; /* 用于存放匹配成功的模式 */
+  Bool_t output = FALSE, show_sta_info = FALSE;
   Char_t opt;
   Char_t *text_file_name, *pats_file_name;
   Bool_t is_matched = FALSE;
-
-  /* 处理命令行参数 */
-  pats_file_name = argv[1];	/* 模式集文件*/
-  text_file_name = argv[2];	/* 文本文件 */
-  if (argc > 3)
+  Suffix_Node_t *pat_list;
+  
+  /* char *p=NULL; */
+  /* strlen(p); */
+  /* exit(EXIT_FAILURE); */
+ /* 处理命令行参数 */
+  pats_file_name = argv[1];	/* 第一个参数为模式集文件名*/
+  text_file_name = argv[2];	/* 第二个参数文本文件名*/
+  if (argc > 3) 		/* 解析随后的参数 */
     for (argv += 3; *argv && **argv == '-'; argv++)
-      while (opt = *++*argv)
+      while ((opt = *++*argv))
 	switch (opt) {
-	case 'o' : show_match_results = TRUE; break;
-	case 's' : show_sta_results = TRUE; break;
+	case 'o' : output = TRUE; break; /* -o表示显示匹配结果 */
+	case 's' : show_sta_info = TRUE; break;   /* -s表示显示统计信息 */
 	default : fprintf(stderr, "非法命令行参数!\n"); exit(EXIT_FAILURE);
 	}
 
-
-  /* 预处理,构建自适应节点 */
-  pats_fp = Fopen(pats_file_name, "r");
+  /* 预处理*/
+  pats_fp = Fopen(pats_file_name, "rb");
   fprintf(stderr, "\nConstructing Adaptive Structures..."); fflush(stdout);
   start = clock();
-  root = make_root(pats_fp);	/* 构建根节点 */
+  pat_list = list_radix_sort(read_pats(pats_fp)); /* 读取模式集,并按模式串字典序排序 */
+  remove_duplicates(pat_list); /* 去掉模式集中重复的元素 */
+  root = CALLOC(1, Expand_Node_t); /* 构建根节点,本质是一个expand_node */
+  root->next_level = pat_list;
   Fclose(pats_fp);
 
   queue = make_queue();
   in_queue(queue, root);
-  while (!queue_is_empty(queue))
+  while (!queue_is_empty(queue)) /* 构建整个AMT */
     choose_adaptor(out_queue(queue));
   end = clock();
   fprintf(stderr, "Done!  \n%f\n",
@@ -234,11 +212,11 @@ int main(int argc, char **argv)
   start = clock();
   text_end = text_buf + file_size - 1;
 
-  for (text_p = text_buf; text_p < text_end; text_p++) {
-    is_matched = match_round(root, text_p, pat_buf);
+  for (match_entr = text_buf; match_entr < text_end; match_entr++) {
+    is_matched = match_round(root, match_entr, pat_buf);
 #if DEBUG
-    if (is_matched && show_match_results)
-      printf("%ld: %s\n", text_p - text_buf + 1, pat_buf);
+    if (is_matched && output)
+      printf("%ld: %s\n", match_entr - text_buf + 1, pat_buf);
 #endif
   }
   end = clock();
@@ -248,7 +226,7 @@ int main(int argc, char **argv)
   fprintf(stderr, "\nTotal matched number: %u\n", match_num);
 
 #if DEBUG
-  if (show_sta_results)
+  if (show_sta_info)
     print_statistics(); /* 打印程序运行过程中的各种统计信息 */
 #endif
 
