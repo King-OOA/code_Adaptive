@@ -4,9 +4,10 @@
 #include "share.h"
 
 
-#if DEBUG
-
 unsigned match_num;
+
+#if PROFILING
+
 unsigned total_nodes;
 
 Str_Num_t type_num[] =

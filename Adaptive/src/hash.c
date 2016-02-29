@@ -28,7 +28,7 @@ static inline Hash_Value_t hash(Char_t const *s, Pat_Len_t len, Pat_Num_t table_
 /* Hash表只能过滤一定不匹配的串,可能匹配的串需要由对应expand node的下一级来进一步判断 */
 Expand_Node_t *match_hash(Hash_Table_t *hash_table, Char_t const **pos_p, Bool_t *is_pat_end)
 {
-#if DEBUG
+#if PROFILING
   fun_calls[MATCH_HASH].num++;
 #endif 
 
@@ -67,7 +67,7 @@ void build_hash_table(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t s
   Pat_Num_t table_size;
   Hash_Value_t hash_value;
 
-#if DEBUG
+#if PROFILING
   type_num[HASH].num++;
 #endif
 
@@ -86,24 +86,7 @@ void build_hash_table(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t s
   free(tails);
   
   expand_node->next_level = hash_table;
-  expand_node->match_fun = (Match_Fun_t) make_hash_table;
+  expand_node->match_fun = (Match_Fun_t) match_hash;
   
   push_queue(hash_table->expand_nodes, table_size);
 }
-
-#if DEBUG
-void print_hash(Hash_Table_t *hash_table)
-{
-    Expand_Node_t *slot = hash_table->expand_nodes;
-    Pat_Num_t i;
-    Pat_Num_t slots_num = hash_table->table_size;
-    Pat_Len_t lsp = hash_table->str_len;
-     
-    printf("Hashing@ slots number: %u, lsp: %u\n", slots_num, lsp);
-    for (i = 0; i < slots_num; slot++, i++)
-      if (slot->next_level) {
-    	printf("slot num: %u\n", i);
-    	print_suffix(slot->next_level);
-      }
-}
-#endif 

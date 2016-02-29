@@ -5,7 +5,7 @@
 
 #define EMPTY NULL		
 
-typedef Expand_Node_t* Q_Value_t; /*队列中的元素为状态的指针*/
+typedef Expand_Node_t const *Q_Value_t; /*队列中的元素为状态的指针*/
 
 typedef struct q_node {
 	Q_Value_t value;

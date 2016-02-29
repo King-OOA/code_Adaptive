@@ -40,25 +40,28 @@ typedef unsigned Hash_Value_t;
 #define ALPHABET_SIZE 256
 #define MIN_PERCENT 1.0
 #define LLP 100
-#define POINTER_SIZE 8
+#define POINTER_SIZE sizeof(void*)
 #define BITS_PER_BYTE 8
-#define SMALL_ARRAY_SIZE 4
 
-#define DEBUG 1
-
+/* 运行版本 */
+#define PROFILING 0  /* 为1时,加入各类统计信息,用于分析程序;否则,仅输出匹配时间,用于最终性能测试*/
+#define DEBUG 0 /* 出Bug时用,一般不用 */
 
 /* hash_table 参数 */
 #define L_BITS 6
 #define R_BITS 2
 #define SEED 50u
+/* 装载因子,值越小hash表越大 */
 #define LOAD_FACTOR 0.6
 
-
+/* ndp超过此数值将构造哈希表 */
 #define NUM_TO_BUILD_HASH 50
-
+/*  数组中的串数量小于此数值时用顺序查找,否则用二分查找 */
+#define SMALL_ARRAY_SIZE 4
 
 
 typedef struct expand_node *(*Match_Fun_t) (void *, Char_t const **, Bool_t *);
+
 typedef struct expand_node {
   void *next_level;
   Match_Fun_t match_fun;

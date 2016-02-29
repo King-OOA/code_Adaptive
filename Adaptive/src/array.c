@@ -17,7 +17,7 @@ extern Num_Num_t array_size[];
 
 static Expand_Node_t *match_single_str(Single_Str_t *single_str, Char_t const **pos_p, Bool_t *is_pat_end)
 {
-#if DEBUG
+#if PROFILING
  fun_calls[MATCH_SINGLE_STR].num++;
 #endif
 
@@ -33,7 +33,7 @@ static Expand_Node_t *match_single_str(Single_Str_t *single_str, Char_t const **
 /*有序查找*/
 static Expand_Node_t *array_ordered_match(Str_Array_t *str_array, Char_t const **pos_p, Bool_t *is_pat_end)
 {
-#if DEBUG
+#if PROFILING
   fun_calls[MATCH_ORDERED_ARRAY].num++;
 #endif
 
@@ -65,7 +65,7 @@ static Expand_Node_t *array_ordered_match(Str_Array_t *str_array, Char_t const *
 /* 二分查找 */
 static Expand_Node_t *array_binary_match(Str_Array_t *str_array, Char_t const **pos_p, Bool_t *is_pat_end)
 {
-#if DEBUG
+#if PROFILING
   fun_calls[MATCH_BINARY_ARRAY].num++;
 #endif
 
@@ -83,6 +83,7 @@ static Expand_Node_t *array_binary_match(Str_Array_t *str_array, Char_t const **
   while (low <= high) {
     mid = (low + high) >> 1;
     result = str_n_cmp(t_str, str_buf + mid * str_len, str_len);
+    
     if (result < 0)
       high = mid - 1;
     else if (result > 0)
@@ -119,12 +120,15 @@ static void build_single_str(Expand_Node_t *expand_node, Pat_Len_t str_len)
   next_p = (Suffix_Node_t **) &single_str->expand_node.next_level;
 
   for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) {
+#if DEBUG
+    assert(same_str(cur_suf->str, single_str->str, str_len));
+#endif 
     next_suf = cur_suf->next;
     if ((cur_suf = cut_head(cur_suf, str_len))) {
       *next_p = cur_suf; next_p = &cur_suf->next;
     }
   }
-
+  
   *next_p = NULL;
 
   expand_node->next_level = single_str;
@@ -153,23 +157,25 @@ static void build_str_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_L
 {
   Suffix_Node_t *cur_suf, *next_suf,  **next_p;
   Str_Array_t *str_array = make_str_array(str_num, str_len); /* 构建str_array */
-  Char_t *cur_str, bad_ch = 0, *pre_str = &bad_ch, *str_buf = str_array->str_buf;
-  Expand_Node_t *expand_nodes = str_array->expand_nodes;
+  Char_t *cur_str, pre_str[str_len], *str_buf = str_array->str_buf;
+  Expand_Node_t *expand_nodes_array = str_array->expand_nodes;
   Flag_t *pat_end_flag;
   int i = -1;
   
+  memset(pre_str, 0, str_len);
+
   pat_end_flag = str_num > POINTER_SIZE * BITS_PER_BYTE ?
     str_array->pat_end_flag.p :
     str_array->pat_end_flag.flag;
-
-  next_p = (Suffix_Node_t **) &expand_nodes[0].next_level;
+  
+  next_p = (Suffix_Node_t **) &expand_nodes_array[0].next_level;
   
   for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) {
     next_suf = cur_suf->next;
     if (!same_str((cur_str = cur_suf->str), pre_str, str_len)) {
-      memcpy(str_buf + (++i) * str_len, cur_str, str_len); /*原链表终止, 指向新链表头 */
-      *next_p = NULL; next_p = (Suffix_Node_t **) &expand_nodes[i].next_level;
-      pre_str = cur_str;
+      *next_p = NULL; memcpy(str_buf + (++i) * str_len, cur_str, str_len); /*原链表终止, 指向新链表头 */
+      next_p = (Suffix_Node_t **) &expand_nodes_array[i].next_level;
+      memcpy(pre_str, cur_str, str_len);
     }
 
     if ((cur_suf = cut_head(cur_suf, str_len))) {
@@ -180,51 +186,32 @@ static void build_str_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_L
 
   *next_p = NULL;
 
+#if DEBUG
+  assert(str_num == i+1);
+#endif 
+
   expand_node->next_level = str_array;
   expand_node->match_fun = (Match_Fun_t) (str_num > SMALL_ARRAY_SIZE ? array_binary_match : array_ordered_match);
 
-  push_queue(expand_nodes, str_num);
+  push_queue(expand_nodes_array, str_num);
 }
 
 void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_len)
 {
-#if DEBUG
+#if PROFILING
      array_size[str_num].num_1 = str_num;
      array_size[str_num].num_2++;
 #endif
 
      if (str_num == 1) {
 	  build_single_str(expand_node, str_len);
-#if DEBUG
+#if PROFILING
 	  type_num[SINGLE_STR].num++;
 #endif
      } else {
 	  build_str_array(expand_node, str_num, str_len);
-#if DEBUG
+#if PROFILING
 	  type_num[ARRAY].num++;
 #endif
      }
 }
-
-#if DEBUG
-/* void print_array(Str_Array_t *str_array) */
-/* { */
-/*   Str_Elmt_t *str_elmt; */
-/*   Pat_Len_t str_len = str_array->str_len; */
-/*   Pat_Num_t n; */
-
-/* #define PRINT_ARRAY(pointer)                                                       \ */
-/*   for (str_elmt = str_array->array, n = str_array->str_num; n; str_elmt++, n--) {  \ */
-/*     print_str(str_elmt->str.pointer, str_len,  ':');                               \ */
-/*     if (str_elmt->pat_end_flag)                                                    \ */
-/*       putchar('*');                                                                \ */
-/*     putchar('\n');                                                                 \ */
-/*     print_suffix(str_elmt->expand_node.next_level);                                \ */
-/*   } */
-
-/*   if (str_len > POINTER_SIZE) */
-/*     PRINT_ARRAY(p) */
-/*   else */
-/*     PRINT_ARRAY(buf) */
-/* } */
-#endif

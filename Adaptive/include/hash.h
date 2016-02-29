@@ -10,6 +10,5 @@ typedef struct  hast_table {
 } Hash_Table_t;
 
 void build_hash_table(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_len);
-void print_hash(Hash_Table_t *hash_table);
 
 #endif 

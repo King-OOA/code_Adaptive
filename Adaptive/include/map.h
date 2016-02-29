@@ -7,7 +7,6 @@
 typedef struct single_ch {
   Expand_Node_t expand_node;
   Char_t ch;
-  //Flag_t pat_end_flag;
 } Single_Ch_t;
 
 typedef struct map_4 {
@@ -36,9 +35,5 @@ typedef struct map_256 {
 } Map_256_t;
 
 void build_map(Expand_Node_t *expand_node, Pat_Num_t ch_num);
-void print_4_map(Map_4_t *map_4);
-void print_16_map(Map_16_t *map_16);
-void print_48_map(Map_48_t *map_48);
-void print_256_map(Map_256_t *map_256);
 
 #endif 

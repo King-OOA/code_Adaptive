@@ -18,6 +18,13 @@
 
 Queue_t *queue;
 
+extern unsigned match_num; /* 任何情况下都要输出,以验证程序正确性 */
+
+#if PROFILING
+extern Num_Num_t access_depth[LLP];
+extern unsigned total_nodes;
+#endif 
+
 static Suffix_Node_t *make_suffix_node(Char_t const *pat, Pat_Len_t pat_len)
 {
      Suffix_Node_t *new_suf_node;
@@ -87,8 +94,6 @@ static void get_ndp_and_lss(Expand_Node_t const *expand_node, Pat_Num_t *ndp_p, 
   *ndp_p = ndp;
 }
 
-extern unsigned total_nodes;
-
 static void choose_adaptor(Expand_Node_t *expand_node)
 {
   Pat_Num_t ndp; /* number of the distinct prefix */
@@ -96,7 +101,7 @@ static void choose_adaptor(Expand_Node_t *expand_node)
 
   get_ndp_and_lss(expand_node, &ndp, &lss); 
 
-#if DEBUG
+#if PROFILING
   total_nodes++;
 #endif
   /* 自适应策略 */
@@ -110,35 +115,37 @@ static void choose_adaptor(Expand_Node_t *expand_node)
   }
 }
 
-extern unsigned match_num;
-extern Num_Num_t access_depth[LLP];
-
-static Bool_t match_round(Expand_Node_t *expand_node, Char_t const *match_entr, Char_t *pat_buf)
+static Bool_t match_round(Expand_Node_t *expand_node, Char_t const *entrance, Char_t *pat_buf)
 {
   Bool_t is_matched = FALSE, is_pat_end = FALSE;
-  Char_t const *p = match_entr;
+  Char_t const *p = entrance;
+
+#if PROFILING
   Pat_Len_t pat_len;
   int depth = 0;
-
+#endif
+  
   while (expand_node && expand_node->next_level) { /* 当前匹配成功且不是叶节点时,继续 */
     expand_node = expand_node->match_fun(expand_node->next_level, &p, &is_pat_end);
     
-#if DEBUG
+#if PROFILING
     depth++;
+#endif
 
    if (is_pat_end) {
      match_num++;
+#if PROFILING
      is_matched = TRUE;
-     pat_len = p - match_entr;
-     *pat_buf++ = ' ';
-     memcpy(pat_buf, match_entr, pat_len);
+     pat_len = p - entrance;
+     *pat_buf++ = ' ';  /* 模式串以空格分隔 */
+     memcpy(pat_buf, entrance, pat_len); /* 复制一个完整模式串 */
      pat_buf += pat_len;
      is_pat_end = FALSE;
-    }
-#endif
+#endif     
+   }
   }
   
-#if DEBUG
+#if PROFILING
   access_depth[depth].num_1 = depth;
   access_depth[depth].num_2++;
   *pat_buf = '\0';
@@ -147,23 +154,30 @@ static Bool_t match_round(Expand_Node_t *expand_node, Char_t const *match_entr, 
   return is_matched;
 }
 
+#if DEBUG
+void print_pat_list(Suffix_Node_t *list_head)
+{
+  while (list_head) {
+    assert(strlen(list_head->str));
+    list_head = list_head->next;
+  }
+}
+#endif 
+
 int main(int argc, char **argv)
 {
   FILE *pats_fp, *text_fp;
   Expand_Node_t *root;
   size_t file_size;
   clock_t start, end;
-  Char_t *text_buf, *match_entr, *text_end;;
+  Char_t *text_buf, *entrance, *text_end;;
   Char_t pat_buf[1000]; /* 用于存放匹配成功的模式 */
   Bool_t output = FALSE, show_sta_info = FALSE;
   Char_t opt;
   Char_t *text_file_name, *pats_file_name;
   Bool_t is_matched = FALSE;
   Suffix_Node_t *pat_list;
-  
-  /* char *p=NULL; */
-  /* strlen(p); */
-  /* exit(EXIT_FAILURE); */
+
  /* 处理命令行参数 */
   pats_file_name = argv[1];	/* 第一个参数为模式集文件名*/
   text_file_name = argv[2];	/* 第二个参数文本文件名*/
@@ -178,18 +192,19 @@ int main(int argc, char **argv)
 
   /* 预处理*/
   pats_fp = Fopen(pats_file_name, "rb");
-  fprintf(stderr, "\nConstructing Adaptive Structures..."); fflush(stdout);
+  fprintf(stderr, "\nConstructing Adaptive Structures...\n"); fflush(stdout);
   start = clock();
   pat_list = list_radix_sort(read_pats(pats_fp)); /* 读取模式集,并按模式串字典序排序 */
   remove_duplicates(pat_list); /* 去掉模式集中重复的元素 */
   root = CALLOC(1, Expand_Node_t); /* 构建根节点,本质是一个expand_node */
   root->next_level = pat_list;
   Fclose(pats_fp);
-
+  
   queue = make_queue();
   in_queue(queue, root);
-  while (!queue_is_empty(queue)) /* 构建整个AMT */
+  while (!queue_is_empty(queue)) /* 构建整个AMT */{
     choose_adaptor(out_queue(queue));
+  }
   end = clock();
   fprintf(stderr, "Done!  \n%f\n",
 	  (double) (end - start) / CLOCKS_PER_SEC);
@@ -212,11 +227,11 @@ int main(int argc, char **argv)
   start = clock();
   text_end = text_buf + file_size - 1;
 
-  for (match_entr = text_buf; match_entr < text_end; match_entr++) {
-    is_matched = match_round(root, match_entr, pat_buf);
-#if DEBUG
+  for (entrance = text_buf; entrance < text_end; entrance++) {
+    is_matched = match_round(root, entrance, pat_buf);
+#if PROFILING
     if (is_matched && output)
-      printf("%ld: %s\n", match_entr - text_buf + 1, pat_buf);
+      printf("%ld: %s\n", entrance - text_buf + 1, pat_buf);
 #endif
   }
   end = clock();
@@ -225,9 +240,10 @@ int main(int argc, char **argv)
 
   fprintf(stderr, "\nTotal matched number: %u\n", match_num);
 
-#if DEBUG
+#if PROFILING
   if (show_sta_info)
     print_statistics(); /* 打印程序运行过程中的各种统计信息 */
 #endif
 
 }
+

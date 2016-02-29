@@ -27,7 +27,7 @@ int rand_range(int low, int high)
 
 void *mlloc(size_t size, const char *file, const char *fun, int line)
 {
-    void *new_mem;
+    void *new_mem = NULL;
 
     if (!(new_mem = malloc(size))) {
         fprintf(stderr, "Out of memory! function: %s, file:%s, line:%d\n", fun, file, line);
@@ -39,7 +39,7 @@ void *mlloc(size_t size, const char *file, const char *fun, int line)
 
 void *clloc(size_t num, size_t size, const char *file, const char *fun, int line)
 {
-    void *new_mem;
+    void *new_mem = NULL;
 
     if (!(new_mem = calloc(num, size))) {
         fprintf(stderr, "Out of memory! function: %s, file:%s, line:%d\n", fun, file, line);

@@ -8,16 +8,16 @@
 
 extern Queue_t *queue;
 
-Suffix_Node_t *cut_head(Suffix_Node_t *suf_node, Pat_Len_t lsp)
+Suffix_Node_t *cut_head(Suffix_Node_t *suf_node, Pat_Len_t lss)
 {
   Pat_Len_t suf_len;
   
-  if ((suf_len = strlen(suf_node->str)) == lsp) { /* 该后缀无法再继续分割 */
+  if ((suf_len = strlen(suf_node->str)) == lss) { /* 该后缀无法再继续分割 */
     free(suf_node);
     return NULL;
   } 
 
-  memmove(suf_node->str, suf_node->str + lsp, suf_len - lsp + 1);
+  memmove(suf_node->str, suf_node->str + lss, suf_len - lss + 1);
   
   return suf_node;
 }

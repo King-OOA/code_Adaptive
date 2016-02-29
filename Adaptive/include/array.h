@@ -22,7 +22,4 @@ typedef struct str_array {
 
 void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_len);
 
-void print_array(Str_Array_t *str_array);
-
-
 #endif 
