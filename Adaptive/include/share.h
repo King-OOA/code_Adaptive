@@ -52,10 +52,10 @@ typedef unsigned Hash_Value_t;
 #define R_BITS 2
 #define SEED 50u
 /* 装载因子,值越小hash表越大 */
-#define LOAD_FACTOR 0.6
+#define LOAD_FACTOR 0.3
 
 /* ndp超过此数值将构造哈希表 */
-#define NUM_TO_BUILD_HASH 50
+#define NUM_TO_BUILD_HASH 20
 /*  数组中的串数量小于此数值时用顺序查找,否则用二分查找 */
 #define SMALL_ARRAY_SIZE 4
 
