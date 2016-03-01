@@ -30,14 +30,6 @@ inline Bool_t same_str(Char_t const *s1, Char_t const *s2, Pat_Len_t len)
   return !len;
 }
 
-inline int str_n_cmp(Char_t const *s1, Char_t const *s2, Pat_Len_t len)
-{
-  while (len && *s1 == *s2)
-    len--, s1++, s2++;
-  
-  return len == 0 ? 0 : *s1 - *s2;
-}
-
 void push_queue(Expand_Node_t const *expand_node, Pat_Num_t num)
 {
   while (num--) {
