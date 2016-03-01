@@ -4,7 +4,7 @@
 #include "share.h"
 
 typedef struct single_str_t {
-  Expand_Node_t expand_node;
+  Expand_Node_t expand_node[1];
   Pat_Len_t str_len;
   Char_t str[];
 } Single_Str_t;

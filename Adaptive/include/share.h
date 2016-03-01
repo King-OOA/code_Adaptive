@@ -51,6 +51,7 @@ typedef unsigned Hash_Value_t;
 #define L_BITS 6
 #define R_BITS 2
 #define SEED 50u
+
 /* 装载因子,值越小hash表越大 */
 #define LOAD_FACTOR 0.3
 

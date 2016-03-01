@@ -15,7 +15,7 @@ extern Str_Num_t type_num[];
 extern Str_Num_t fun_calls[];
 extern Num_Num_t array_size[];
 
-static Expand_Node_t *match_single_str(Single_Str_t *single_str, Char_t const **pos_p, Bool_t *is_pat_end)
+static Expand_Node_t *match_single_str(Single_Str_t *single_str, Char_t const **pos_p, Bool_t *is_pat_end_p)
 {
 #if PROFILING
  fun_calls[MATCH_SINGLE_STR].num++;
@@ -24,14 +24,14 @@ static Expand_Node_t *match_single_str(Single_Str_t *single_str, Char_t const **
   if (!same_str(single_str->str, *pos_p, single_str->str_len))
     return NULL;
 
-  *is_pat_end = TRUE; /* 肯定是模式终止节点 */
+  *is_pat_end_p = TRUE; /* 肯定是模式终止节点 */
   *pos_p += single_str->str_len;
 
-  return &single_str->expand_node;
+  return single_str->expand_node;
 }
 
 /*有序查找*/
-static Expand_Node_t *array_ordered_match(Str_Array_t *str_array, Char_t const **pos_p, Bool_t *is_pat_end)
+static Expand_Node_t *array_ordered_match(Str_Array_t *str_array, Char_t const **pos_p, Bool_t *is_pat_end_p)
 {
 #if PROFILING
   fun_calls[MATCH_ORDERED_ARRAY].num++;
@@ -49,21 +49,21 @@ static Expand_Node_t *array_ordered_match(Str_Array_t *str_array, Char_t const *
     str_array->pat_end_flag.p :
     str_array->pat_end_flag.flag;
 
-  while (str_num && (result = str_n_cmp(str_buf, t_str, str_len)) < 0)
+  while (str_num && (result = memcmp(str_buf, t_str, str_len)) < 0)
     str_num--, str_buf += str_len;
 
   if (str_num == 0 || result > 0) 	/* 没找到 */
     return NULL;
 
   i = str_array->str_num - str_num; /* 第i个字符串匹配成功 */
-  *is_pat_end = test_bit(pat_end_flag, i);
+  *is_pat_end_p = test_bit(pat_end_flag, i);
   *pos_p += str_len;
 
   return str_array->expand_nodes + i;
 }
 
 /* 二分查找 */
-static Expand_Node_t *array_binary_match(Str_Array_t *str_array, Char_t const **pos_p, Bool_t *is_pat_end)
+static Expand_Node_t *array_binary_match(Str_Array_t *str_array, Char_t const **pos_p, Bool_t *is_pat_end_p)
 {
 #if PROFILING
   fun_calls[MATCH_BINARY_ARRAY].num++;
@@ -82,14 +82,14 @@ static Expand_Node_t *array_binary_match(Str_Array_t *str_array, Char_t const **
 
   while (low <= high) {
     mid = (low + high) >> 1;
-    result = str_n_cmp(t_str, str_buf + mid * str_len, str_len);
+    result = memcmp(t_str, str_buf + mid * str_len, str_len);
     
     if (result < 0)
       high = mid - 1;
     else if (result > 0)
       low = mid + 1;
     else {
-      *is_pat_end = test_bit(pat_end_flag, mid);
+      *is_pat_end_p = test_bit(pat_end_flag, mid);
       *pos_p += str_len;
       return str_array->expand_nodes + mid;
     } 
@@ -103,8 +103,8 @@ static Single_Str_t *make_single_str(Pat_Len_t str_len)
      Single_Str_t *new_single_str = VMALLOC(Single_Str_t, Char_t, str_len);
 
      new_single_str->str_len = str_len;
-     new_single_str->expand_node.match_fun = NULL;
-     new_single_str->expand_node.next_level = NULL;
+     new_single_str->expand_node->match_fun = NULL;
+     new_single_str->expand_node->next_level = NULL;
 
      return new_single_str;
 }
@@ -117,7 +117,7 @@ static void build_single_str(Expand_Node_t *expand_node, Pat_Len_t str_len)
 
   cur_suf = expand_node->next_level;
   memcpy(single_str->str, cur_suf->str, str_len);
-  next_p = (Suffix_Node_t **) &single_str->expand_node.next_level;
+  next_p = (Suffix_Node_t **) &single_str->expand_node->next_level;
 
   for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) {
 #if DEBUG
@@ -134,7 +134,7 @@ static void build_single_str(Expand_Node_t *expand_node, Pat_Len_t str_len)
   expand_node->next_level = single_str;
   expand_node->match_fun = (Match_Fun_t) match_single_str;
 
-  push_queue(&single_str->expand_node, 1);
+  push_queue(single_str->expand_node, 1);
 }
 
 static Str_Array_t *make_str_array(Pat_Num_t str_num, Pat_Len_t str_len)

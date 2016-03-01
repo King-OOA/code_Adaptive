@@ -15,7 +15,7 @@ extern Num_Num_t map_size[];
 extern Str_Num_t type_num[];
 extern Str_Num_t fun_calls[];
 
-static Expand_Node_t *match_single_ch(Single_Ch_t *single_ch, Char_t const **pos_p, Bool_t *is_pat_end)
+static Expand_Node_t *match_single_ch(Single_Ch_t *single_ch, Char_t const **pos_p, Bool_t *is_pat_end_p)
 {
 #if PROFILING
   fun_calls[MATCH_SINGLE_CH].num++;
@@ -25,12 +25,12 @@ static Expand_Node_t *match_single_ch(Single_Ch_t *single_ch, Char_t const **pos
     return NULL;
 
   (*pos_p)++;
-  *is_pat_end = TRUE;//single_ch->pat_end_flag;
+  *is_pat_end_p = TRUE;
 
-  return &single_ch->expand_node;
+  return single_ch->expand_node;
 }
 
-static Expand_Node_t *match_map_4(Map_4_t *map_4, Char_t const **pos_p, Bool_t *is_pat_end)
+static Expand_Node_t *match_map_4(Map_4_t *map_4, Char_t const **pos_p, Bool_t *is_pat_end_p)
 {
 #if PROFILING
   fun_calls[MATCH_MAP_4].num++;
@@ -48,13 +48,13 @@ static Expand_Node_t *match_map_4(Map_4_t *map_4, Char_t const **pos_p, Bool_t *
   
   /* 匹配成功 */
   i = key - map_4->keys;
-  *is_pat_end = test_bit(map_4->pat_end_flag, i);
+  *is_pat_end_p = test_bit(map_4->pat_end_flag, i);
   (*pos_p)++;
 
   return map_4->expand_nodes + i;
 }
 
-static Expand_Node_t *match_map_16(Map_16_t *map_16, Char_t const **pos_p, Bool_t *is_pat_end)
+static Expand_Node_t *match_map_16(Map_16_t *map_16, Char_t const **pos_p, Bool_t *is_pat_end_p)
 {
 #if PROFILING
   fun_calls[MATCH_MAP_16].num++;
@@ -72,7 +72,7 @@ static Expand_Node_t *match_map_16(Map_16_t *map_16, Char_t const **pos_p, Bool_
     else if (t_ch > key)
       low = mid + 1;
     else {
-      *is_pat_end = test_bit(map_16->pat_end_flag, mid);
+      *is_pat_end_p = test_bit(map_16->pat_end_flag, mid);
       (*pos_p)++;
       return map_16->expand_nodes + mid;
     }
@@ -81,7 +81,7 @@ static Expand_Node_t *match_map_16(Map_16_t *map_16, Char_t const **pos_p, Bool_
   return NULL;
 }
 
-static Expand_Node_t *match_map_48(Map_48_t *map_48, Char_t const **pos_p, Bool_t *is_pat_end)
+static Expand_Node_t *match_map_48(Map_48_t *map_48, Char_t const **pos_p, Bool_t *is_pat_end_p)
 {
 #if PROFILING
   fun_calls[MATCH_MAP_48].num++;
@@ -93,13 +93,13 @@ static Expand_Node_t *match_map_48(Map_48_t *map_48, Char_t const **pos_p, Bool_
   if ((i = map_48->index[t_ch]) == -1)
     return NULL;
 
-  *is_pat_end = test_bit(map_48->pat_end_flag, i);
+  *is_pat_end_p = test_bit(map_48->pat_end_flag, i);
   (*pos_p)++;
 
   return map_48->expand_nodes + i;
 }
 
-static Expand_Node_t *match_map_256(Map_256_t *map_256, Char_t const **pos_p, Bool_t *is_pat_end)
+static Expand_Node_t *match_map_256(Map_256_t *map_256, Char_t const **pos_p, Bool_t *is_pat_end_p_p)
 {
 #if PROFILING
   fun_calls[MATCH_MAP_256].num++;
@@ -108,9 +108,9 @@ static Expand_Node_t *match_map_256(Map_256_t *map_256, Char_t const **pos_p, Bo
   UC_t t_ch = **pos_p;
   Expand_Node_t *expand_node = map_256->expand_nodes + t_ch;
 
-  *is_pat_end = test_bit(map_256->pat_end_flag, t_ch);
-
-  if (expand_node->next_level || is_pat_end)
+  *is_pat_end_p_p = test_bit(map_256->pat_end_flag, t_ch);
+  /* 三种情况: 1.只是终止节点,没有后续; 2.既是终止节点,又有后续; 3.不是终止节点,但有后续 */
+  if (*is_pat_end_p_p || expand_node->next_level)
     (*pos_p)++;
 
   return expand_node;
@@ -119,32 +119,34 @@ static Expand_Node_t *match_map_256(Map_256_t *map_256, Char_t const **pos_p, Bo
 /* 所有后缀的首字符相同 */
 void build_single_ch(Expand_Node_t *expand_node)
 {
-    Suffix_Node_t *cur_suf, *next_suf, **next_p;
-    Single_Ch_t *single_ch = CALLOC(1, Single_Ch_t);
+  Suffix_Node_t *cur_suf, *next_suf, **next_p;
+  Single_Ch_t *single_ch = CALLOC(1, Single_Ch_t);
 
-    cur_suf = expand_node->next_level;
-    single_ch->ch = *cur_suf->str;
+  cur_suf = expand_node->next_level;
+  single_ch->ch = *cur_suf->str;
+
 #if DEBUG
-    assert(single_ch->ch);
+  assert(single_ch->ch);
 #endif 
-    next_p = (Suffix_Node_t **) &single_ch->expand_node.next_level;
+
+  next_p = (Suffix_Node_t **) &single_ch->expand_node->next_level;
  
-    for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) {
-      next_suf = cur_suf->next;
+  for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) {
+    next_suf = cur_suf->next;
 #if DEBUG
-      assert(*cur_suf->str == single_ch->ch);
+    assert(*cur_suf->str == single_ch->ch);
 #endif
-if ((cur_suf = cut_head(cur_suf, 1))) { /* 如果当前后缀去掉首字符后还存在 */
-	*next_p = cur_suf; next_p = &cur_suf->next; /* 则将去掉首字符的后缀,插入到链表中 */
-      } 
-    }
+    if ((cur_suf = cut_head(cur_suf, 1))) { /* 如果当前后缀去掉首字符后还存在 */
+      *next_p = cur_suf; next_p = &cur_suf->next; /* 则将去掉首字符的后缀,插入到链表中 */
+    } 
+  }
 
-    *next_p = NULL;
+  *next_p = NULL;
 
-    expand_node->next_level = single_ch;
-    expand_node->match_fun = (Match_Fun_t) match_single_ch;
+  expand_node->next_level = single_ch;
+  expand_node->match_fun = (Match_Fun_t) match_single_ch;
 
-    push_queue(&single_ch->expand_node, 1);
+  push_queue(single_ch->expand_node, 1);
 }
 
 #define BUILD_MAP_4_OR_16(n)						\

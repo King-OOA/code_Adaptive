@@ -5,7 +5,7 @@
 
 /* 一定是终止节点 */
 typedef struct single_ch {
-  Expand_Node_t expand_node;
+  Expand_Node_t expand_node[1];
   Char_t ch;
 } Single_Ch_t;
 
