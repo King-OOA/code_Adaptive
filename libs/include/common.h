@@ -16,4 +16,10 @@ void Fclose(FILE *);
 char *str_cat(const char *, const char *);
 int rand_int(int, int);
 
+int get_file_alphabet(char const *filename);
+size_t  get_file_size(FILE *fp);
+void cut_file(char const *iname, int n);
+int alphabet_compact(unsigned char *text, int text_len);
+char *load_file(const char *file_name, size_t *file_size_p);
+
 #endif

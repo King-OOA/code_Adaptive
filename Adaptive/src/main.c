@@ -5,7 +5,6 @@
 #include <time.h>
 #include <math.h>
 #include "common.h"
-#include "textools.h"
 //#include "makedata.h"
 #include "hash.h"
 #include "share.h"
@@ -213,11 +212,7 @@ int main(int argc, char **argv)
   /* 读文本 */
   fprintf(stderr, "\nLoading text..."); fflush(stdout);
   start = clock();
-  text_fp = Fopen(text_file_name, "rb");
-  file_size = get_file_size(text_fp);
-  text_buf = MALLOC(file_size + 1, Char_t);
-  fread(text_buf, file_size, 1, text_fp);
-  text_buf[file_size] = '\0';
+  text_buf = load_file(text_file_name, &file_size);
   end = clock();
   fprintf(stderr, "Done!  \n%f\n",
 	  (double) (end - start) / CLOCKS_PER_SEC);

@@ -22,6 +22,7 @@ Str_Num_t fun_calls[] = {
 
 Num_Num_t map_size[ALPHABET_SIZE];
 Num_Num_t array_size[NUM_TO_BUILD_HASH+1]; /* 0元素不用 */
+Num_Num_t array_len[MAX_PAT_LEN+1];
 Num_Num_t access_depth[LLP];
  
 static int str_num_cmp(const void *elmt_1, const void *elmt_2)
@@ -120,6 +121,18 @@ void print_statistics(void)
   for (i = NUM_TO_BUILD_HASH; (num = array_size[i].num_2); i--)
     if ((percent = ((double) num / total_num) * 100.0) > MIN_PERCENT)
       printf("%2u: %*u (%5.2f%%)\n", array_size[i].num_1, digits, num, percent);
+
+    /* 打印不同长度数组的数量 */
+  printf("\nNumber of Array with Different string length:\n\n");
+  for (total_num = 0, i = 1; i < MAX_PAT_LEN + 1; i++)
+    total_num += array_len[i].num_2;
+  qsort(array_len, MAX_PAT_LEN + 1, sizeof(Num_Num_t), num_num_cmp);
+  digits = get_digits(array_len[MAX_PAT_LEN].num_2); /* 最大数的位数 */
+  /* 从大到小打印 */
+  for (i = MAX_PAT_LEN; (num = array_len[i].num_2); i--)
+    if ((percent = ((double) num / total_num) * 100.0) > MIN_PERCENT)
+      printf("%2u: %*u (%5.2f%%)\n", array_len[i].num_1, digits, num, percent);
+
 }
 
 #endif

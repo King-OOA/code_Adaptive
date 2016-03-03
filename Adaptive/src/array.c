@@ -14,6 +14,7 @@ extern Queue_t *queue;
 extern Str_Num_t type_num[];
 extern Str_Num_t fun_calls[];
 extern Num_Num_t array_size[];
+extern Num_Num_t array_len[];
 
 static Expand_Node_t *match_single_str(Single_Str_t *single_str, Char_t const **pos_p, Bool_t *is_pat_end_p)
 {
@@ -199,8 +200,12 @@ static void build_str_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_L
 void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_len)
 {
 #if PROFILING
+  /* 按数组元素个数分类 */
      array_size[str_num].num_1 = str_num;
      array_size[str_num].num_2++;
+  /* 按数组元素长度分类 */
+     array_len[str_len].num_1 = str_len;
+     array_len[str_len].num_2++;
 #endif
 
      if (str_num == 1) {

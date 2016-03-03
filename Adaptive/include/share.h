@@ -44,7 +44,7 @@ typedef unsigned Hash_Value_t;
 #define BITS_PER_BYTE 8
 
 /* 运行版本 */
-#define PROFILING 0  /* 为1时,加入各类统计信息,用于分析程序;否则,仅输出匹配时间,用于最终性能测试*/
+#define PROFILING 1  /* 为1时,加入各类统计信息,用于分析程序;否则,仅输出匹配时间,用于最终性能测试*/
 #define DEBUG 0 /* 出Bug时用,一般不用 */
 
 /* hash_table 参数 */

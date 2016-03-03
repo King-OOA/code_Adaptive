@@ -8,20 +8,20 @@ vpath %.so ./so
 
 #OBJS := #$(patsubst ./_c/%.c, %.o, $(wildcard *.c))
 
-OBJS = main.o common.o textools.o makedata.o binary.o stack.o queue.o  BST.o lists.o sorter.o
-SOS = libcommon.so libtextools.so libmakedata.so libADT.so libbinary.so
+OBJS = main.o common.o  makedata.o binary.o stack.o queue.o  BST.o lists.o sorter.o
+SOS = libcommon.so  libmakedata.so libADT.so libbinary.so
 SOPATH = /home/pz/code/libs/so
 INCLUDE = ./include
 
 ADTS = stack.o queue.o BST.o lists.o sorter.o
 
 a.out: main.o $(SOS) 
-	$(CC) $< -L$(SOPATH) -ltextools -lmakedata -lADT  -lbinary -lcommon -lm
+	$(CC) $< -L$(SOPATH)  -lmakedata -lADT  -lbinary -lcommon -lm
 	rm *.o
 
 $(OBJS) : common.h
 
-main.o: main.c textools.h makedata.h stack.h  BST.h lists.h binary.h
+main.o: main.c makedata.h stack.h  BST.h lists.h binary.h
 	$(CC) $(CFLAGS) $< -o $@
 
 libcommon.so: common.o
@@ -29,14 +29,14 @@ libcommon.so: common.o
 common.o: common.c 
 	$(CC) $(CFLAGS) $< -o $@
 
-libtextools.so: textools.o
-	$(CC) $(LFLAGS) $^ -o $(SOPATH)/$@
-textools.o: textools.c textools.h
-	$(CC) $(CFLAGS) $< -o $@
+# libtextools.so: textools.o
+# 	$(CC) $(LFLAGS) $^ -o $(SOPATH)/$@
+# textools.o: textools.c textools.h
+# 	$(CC) $(CFLAGS) $< -o $@
 
 libmakedata.so: makedata.o
 	$(CC) $(LFLAGS) $^ -o $(SOPATH)/$@
-makedata.o : makedata.c makedata.h textools.h
+makedata.o : makedata.c makedata.h common.h
 	$(CC) $(CFLAGS) $< -o $@
 
 libbinary.so: binary.o
