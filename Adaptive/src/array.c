@@ -99,6 +99,25 @@ static Expand_Node_t *array_binary_match(Str_Array_t *str_array, Char_t const **
   return NULL;
 }
 
+#define BLOCK_2(str) ((*(str) << BITS_PER_BYTE) + *((str)+1))
+
+static Expand_Node_t *match_map_65536(Map_65536_t *map_65536, Char_t const **pos_p, Bool_t *is_pat_end_p)
+{
+#if PROFILING
+  fun_calls[MATCH_MAP_65536].num++;
+#endif
+
+  int t_block = BLOCK_2(*pos_p);
+  Expand_Node_t *expand_node = map_65536->expand_nodes + t_block;
+
+  *is_pat_end_p = test_bit(map_65536->pat_end_flag, t_block);
+  /* 三种情况: 1.只是终止节点,没有后续; 2.既是终止节点,又有后续; 3.不是终止节点,但有后续 */
+  if (*is_pat_end_p || expand_node->next_level)
+    (*pos_p) += 2;
+
+  return expand_node;
+}
+
 static Single_Str_t *make_single_str(Pat_Len_t str_len)
 {
      Single_Str_t *new_single_str = VMALLOC(Single_Str_t, Char_t, str_len);
@@ -197,6 +216,37 @@ static void build_str_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_L
   push_queue(expand_nodes_array, str_num);
 }
 
+static void build_map_65536(Expand_Node_t *expand_node)
+{
+  Suffix_Node_t *cur_suf, *next_suf, **next_p;
+  Map_65536_t *map_65536 = CALLOC(1, Map_65536_t);
+  Expand_Node_t *expand_nodes_65536 = map_65536->expand_nodes;
+  int pre_block = 0, cur_block;
+
+  next_p = (Suffix_Node_t **) &expand_nodes_65536[0].next_level; /* 初始化 */
+
+  for (cur_suf = expand_node->next_level; cur_suf; cur_suf = next_suf) {
+    next_suf = cur_suf->next;
+    if ((cur_block = BLOCK_2(cur_suf->str)) != pre_block) { /* 终止上一个链表,跳转到新链表头 */
+      *next_p = NULL;
+      next_p = (Suffix_Node_t **) &expand_nodes_65536[cur_block].next_level;
+      pre_block = cur_block;
+    }
+
+    if ((cur_suf = cut_head(cur_suf, 2))) {
+      *next_p = cur_suf; next_p = &cur_suf->next;
+    } else
+      set_bit(map_65536->pat_end_flag, cur_block);
+  }
+
+  *next_p = NULL;
+
+  expand_node->next_level = map_65536;
+  expand_node->match_fun = (Match_Fun_t) match_map_65536;
+
+  push_queue(map_65536->expand_nodes, 65536);
+}
+
 void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_len)
 {
 #if PROFILING
@@ -208,7 +258,12 @@ void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_le
      array_len[str_len].num_2++;
 #endif
 
-     if (str_num == 1) {
+     if (str_len == 2 && str_num > 100) {
+       build_map_65536(expand_node);
+#if PROFILING
+       type_num[MAP_65536].num++;
+#endif
+     } else if (str_num == 1) {
 	  build_single_str(expand_node, str_len);
 #if PROFILING
 	  type_num[SINGLE_STR].num++;
@@ -220,3 +275,4 @@ void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_le
 #endif
      }
 }
+

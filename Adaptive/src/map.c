@@ -99,7 +99,7 @@ static Expand_Node_t *match_map_48(Map_48_t *map_48, Char_t const **pos_p, Bool_
   return map_48->expand_nodes + i;
 }
 
-static Expand_Node_t *match_map_256(Map_256_t *map_256, Char_t const **pos_p, Bool_t *is_pat_end_p_p)
+static Expand_Node_t *match_map_256(Map_256_t *map_256, Char_t const **pos_p, Bool_t *is_pat_end_p)
 {
 #if PROFILING
   fun_calls[MATCH_MAP_256].num++;
@@ -108,9 +108,9 @@ static Expand_Node_t *match_map_256(Map_256_t *map_256, Char_t const **pos_p, Bo
   UC_t t_ch = **pos_p;
   Expand_Node_t *expand_node = map_256->expand_nodes + t_ch;
 
-  *is_pat_end_p_p = test_bit(map_256->pat_end_flag, t_ch);
+  *is_pat_end_p = test_bit(map_256->pat_end_flag, t_ch);
   /* 三种情况: 1.只是终止节点,没有后续; 2.既是终止节点,又有后续; 3.不是终止节点,但有后续 */
-  if (*is_pat_end_p_p || expand_node->next_level)
+  if (*is_pat_end_p || expand_node->next_level)
     (*pos_p)++;
 
   return expand_node;

@@ -12,13 +12,13 @@ unsigned total_nodes;
 
 Str_Num_t type_num[] =
   {{"", 0}, {"single char", 0}, {"map 4", 0}, {"map 16", 0}, {"map 48", 0},
-   {"map 256", 0}, {"single string", 0}, {"array", 0}, {"hash", 0}};
+   {"map 256", 0}, {"single string", 0}, {"array", 0},{"map 65536", 0}, {"hash", 0}};
 
 Str_Num_t fun_calls[] = {
   {"single char match", 0}, {"map 4 match", 0},
   {"map 16 match", 0}, {"map 48 match", 0}, {"map 256 match", 0},
   {"single string match", 0}, {"array ordered match", 0},
-  {"array binary match", 0}, {"hash match", 0}};
+  {"array binary match", 0}, {"map 65536 match", 0}, {"hash match", 0}};
 
 Num_Num_t map_size[ALPHABET_SIZE];
 Num_Num_t array_size[NUM_TO_BUILD_HASH+1]; /* 0元素不用 */
@@ -132,7 +132,6 @@ void print_statistics(void)
   for (i = MAX_PAT_LEN; (num = array_len[i].num_2); i--)
     if ((percent = ((double) num / total_num) * 100.0) > MIN_PERCENT)
       printf("%2u: %*u (%5.2f%%)\n", array_len[i].num_1, digits, num, percent);
-
 }
 
 #endif

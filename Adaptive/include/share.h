@@ -12,7 +12,7 @@ typedef UC_t Flag_t;
 typedef unsigned Hash_Value_t;
 
 /* 结构类型 */
-#define TYPE_NUM    9
+#define TYPE_NUM    10
 #define END         0
 #define SINGLE_CH   1
 #define MAP_4       2
@@ -21,9 +21,10 @@ typedef unsigned Hash_Value_t;
 #define MAP_256     5
 #define SINGLE_STR  6
 #define ARRAY       7
-#define HASH        8
+#define MAP_65536   8
+#define HASH        9
 /* 匹配函数类型 */
-#define MATCH_FUN_NUM       9
+#define MATCH_FUN_NUM       10
 #define MATCH_SINGLE_CH     0
 #define MATCH_MAP_4         1
 #define MATCH_MAP_16        2
@@ -32,7 +33,8 @@ typedef unsigned Hash_Value_t;
 #define MATCH_SINGLE_STR    5
 #define MATCH_ORDERED_ARRAY 6
 #define MATCH_BINARY_ARRAY  7
-#define MATCH_HASH          8
+#define MATCH_MAP_65536     8
+#define MATCH_HASH          9
 
 #define TRUE 1
 #define FALSE 0

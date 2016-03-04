@@ -20,6 +20,11 @@ typedef struct str_array {
   Char_t str_buf[];
 } Str_Array_t;
 
+typedef struct map_655356 {
+  Expand_Node_t expand_nodes[65536];
+  Flag_t pat_end_flag[65536/8];
+} Map_65536_t;
+
 void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_len);
 
 #endif 

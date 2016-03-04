@@ -177,7 +177,7 @@ int main(int argc, char **argv)
   Bool_t is_matched = FALSE;
   Suffix_Node_t *pat_list;
 
- /* 处理命令行参数 */
+/* 处理命令行参数 */
   pats_file_name = argv[1];	/* 第一个参数为模式集文件名*/
   text_file_name = argv[2];	/* 第二个参数文本文件名*/
   if (argc > 3) 		/* 解析随后的参数 */
