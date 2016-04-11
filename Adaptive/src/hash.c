@@ -34,7 +34,7 @@ static inline Hash_Value_T hash(Char_T const *s, Pat_Len_T len, Pat_Num_T table_
 }
 
 /* Hash表只能过滤一定不匹配的串,可能匹配的串需要由对应expand node的下一级来进一步判断 */
-Tree_Node_T match_hash(Hash_Table_T hash_table, Char_T const **pos_p, bool *find_pat_p)
+Tree_Node_T match_hash(Hash_Table_T hash_table, Char_T const **pos_p, bool *pat_end_p)
 {
 #if PROFILING
   fun_calls[MATCH_HASH].num++;

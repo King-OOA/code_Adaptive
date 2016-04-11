@@ -153,7 +153,7 @@ Tree_Node_T build_AMT(Char_T *pats_file_name)
 
 static bool check_entrance(Tree_Node_T t, Char_T const *entrance, Char_T *matched_pat_buf, bool output)
 {
-  bool find_pat = false;
+  bool pat_end = false, find_pat = false;
   Char_T const *p = entrance;
 
 #if PROFILING
@@ -161,15 +161,16 @@ static bool check_entrance(Tree_Node_T t, Char_T const *entrance, Char_T *matche
 #endif
   
   while (t) {
-    t = t->match_fun(t->link, &p, &find_pat);
+    t = t->match_fun(t->link, &p, &pat_end);
     
 #if PROFILING
     depth++;
 #endif
 
-    if (find_pat) {
+    if (pat_end) {
       match_num++;
-      find_pat = false;
+      find_pat = true;
+      pat_end = false;
 #if PROFILING
       if (output) {
 	Pat_Len_T pat_len = p - entrance;

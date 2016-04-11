@@ -37,7 +37,7 @@ typedef struct Map_65536 {
   Flag_T pat_end_flag[65536/8];
 } *Map_65536_T;
 
-static Tree_Node_T match_single_str(Single_Str_T single_str, Char_T const **pos_p, bool *find_pat_p)
+static Tree_Node_T match_single_str(Single_Str_T single_str, Char_T const **pos_p, bool *pat_end_p)
 {
 #if PROFILING
   fun_calls[MATCH_SINGLE_STR].num++;
@@ -46,14 +46,14 @@ static Tree_Node_T match_single_str(Single_Str_T single_str, Char_T const **pos_
   if (!same_str(single_str->str, *pos_p, single_str->str_len))
     return NULL;
 
-  *find_pat_p = true; /* 肯定是模式终止节点 */
+  *pat_end_p = true; /* 肯定是模式终止节点 */
   *pos_p += single_str->str_len;
 
   return &single_str->child;
 }
 
 /*有序查找*/
-static Tree_Node_T array_ordered_match(Str_Array_T str_array, Char_T const **pos_p, bool *find_pat_p)
+static Tree_Node_T array_ordered_match(Str_Array_T str_array, Char_T const **pos_p, bool *pat_end_p)
 {
 #if PROFILING
   fun_calls[MATCH_ORDERED_ARRAY].num++;
@@ -76,14 +76,14 @@ static Tree_Node_T array_ordered_match(Str_Array_T str_array, Char_T const **pos
     return NULL;
 
   Pat_Num_T i = str_array->str_num - str_num; /* 第i个字符串匹配成功 */
-  *find_pat_p = test_bit(pat_end_flag, i);
+  *pat_end_p = test_bit(pat_end_flag, i);
   *pos_p += str_len;
 
   return str_array->children + i;
 }
 
 /* 二分查找 */
-static Tree_Node_T array_binary_match(Str_Array_T str_array, Char_T const **pos_p, bool *find_pat_p)
+static Tree_Node_T array_binary_match(Str_Array_T str_array, Char_T const **pos_p, bool *pat_end_p)
 {
 #if PROFILING
   fun_calls[MATCH_BINARY_ARRAY].num++;
@@ -107,7 +107,7 @@ static Tree_Node_T array_binary_match(Str_Array_T str_array, Char_T const **pos_
     else if (result > 0)
       low = mid + 1;
     else {
-      *find_pat_p = test_bit(pat_end_flag, mid);
+      *pat_end_p = test_bit(pat_end_flag, mid);
       *pos_p += str_len;
       return str_array->children + mid;
     } 
@@ -123,7 +123,7 @@ static uint16_t block_2(UC_T const *p)
   return (u << BITS_PER_BYTE) + *(p + 1);
 }
 
-static Tree_Node_T match_map_65536(Map_65536_T map_65536, Char_T **pos_p, bool *find_pat_p)
+static Tree_Node_T match_map_65536(Map_65536_T map_65536, Char_T **pos_p, bool *pat_end_p)
 {
 #if PROFILING
   fun_calls[MATCH_MAP_65536].num++;
@@ -132,9 +132,9 @@ static Tree_Node_T match_map_65536(Map_65536_T map_65536, Char_T **pos_p, bool *
   uint16_t t_block = block_2(*pos_p);
   Tree_Node_T child = map_65536->children + t_block;
 
-  *find_pat_p = test_bit(map_65536->pat_end_flag, t_block);
+  *pat_end_p = test_bit(map_65536->pat_end_flag, t_block);
   /* 匹配的三种情况: 1.只是终止节点,没有后续; 2.既是终止节点,又有后续; 3.不是终止节点,但有后续 */
-  if (*find_pat_p || child->link)
+  if (*pat_end_p || child->link)
     (*pos_p) += 2;
 
   return child->link == NULL ? NULL : child;

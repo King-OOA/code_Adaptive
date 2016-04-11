@@ -48,7 +48,7 @@ typedef struct Map_256 {
   Flag_T pat_end_flag[256/8];
 } *Map_256_T;
 
-static Tree_Node_T match_map_1(Map_1_T map_1, Char_T const **pos_p, bool *find_pat_p)
+static Tree_Node_T match_map_1(Map_1_T map_1, Char_T const **pos_p, bool *pat_end_p)
 {
 #if PROFILING
   fun_calls[MATCH_MAP_1].num++;
@@ -58,12 +58,12 @@ static Tree_Node_T match_map_1(Map_1_T map_1, Char_T const **pos_p, bool *find_p
     return NULL;
 
   (*pos_p)++;
-  *find_pat_p = true; /* 一定是某模式的终止节点 */
+  *pat_end_p = true; /* 一定是某模式的终止节点 */
 
   return &map_1->child;
 }
 
-static Tree_Node_T match_map_4(Map_4_T map_4, Char_T const **pos_p, bool *find_pat_p)
+static Tree_Node_T match_map_4(Map_4_T map_4, Char_T const **pos_p, bool *pat_end_p)
 {
 #if PROFILING
   fun_calls[MATCH_MAP_4].num++;
@@ -80,13 +80,13 @@ static Tree_Node_T match_map_4(Map_4_T map_4, Char_T const **pos_p, bool *find_p
     return NULL;
   
   /* 匹配成功 */
-  *find_pat_p = test_bit(map_4->pat_end_flag, i);
+  *pat_end_p = test_bit(map_4->pat_end_flag, i);
   (*pos_p)++;
 
   return map_4->children + i;
 }
 
-static Tree_Node_T match_map_16(Map_16_T map_16, Char_T const **pos_p, bool *find_pat_p)
+static Tree_Node_T match_map_16(Map_16_T map_16, Char_T const **pos_p, bool *pat_end_p)
 {
 #if PROFILING
   fun_calls[MATCH_MAP_16].num++;
@@ -104,7 +104,7 @@ static Tree_Node_T match_map_16(Map_16_T map_16, Char_T const **pos_p, bool *fin
     else if (t_ch > key)
       low = mid + 1;
     else {
-      *find_pat_p = test_bit(map_16->pat_end_flag, mid);
+      *pat_end_p = test_bit(map_16->pat_end_flag, mid);
       (*pos_p)++;
       return map_16->children + mid;
     }
@@ -113,7 +113,7 @@ static Tree_Node_T match_map_16(Map_16_T map_16, Char_T const **pos_p, bool *fin
   return NULL;
 }
 
-static Tree_Node_T match_map_48(Map_48_T map_48, Char_T const **pos_p, bool *find_pat_p)
+static Tree_Node_T match_map_48(Map_48_T map_48, Char_T const **pos_p, bool *pat_end_p)
 {
 #if PROFILING
   fun_calls[MATCH_MAP_48].num++;
@@ -125,13 +125,13 @@ static Tree_Node_T match_map_48(Map_48_T map_48, Char_T const **pos_p, bool *fin
   if ((i = map_48->index[t_ch]) == -1)
     return NULL;
 
-  *find_pat_p = test_bit(map_48->pat_end_flag, i);
+  *pat_end_p = test_bit(map_48->pat_end_flag, i);
   (*pos_p)++;
 
   return map_48->children + i;
 }
 
-static Tree_Node_T match_map_256(Map_256_T map_256, Char_T const **pos_p, bool *find_pat_p)
+static Tree_Node_T match_map_256(Map_256_T map_256, Char_T const **pos_p, bool *pat_end_p)
 {
 #if PROFILING
   fun_calls[MATCH_MAP_256].num++;
@@ -139,10 +139,10 @@ static Tree_Node_T match_map_256(Map_256_T map_256, Char_T const **pos_p, bool *
 
   UC_T t_ch = **pos_p;
 
-  *find_pat_p = test_bit(map_256->pat_end_flag, t_ch);
+  *pat_end_p = test_bit(map_256->pat_end_flag, t_ch);
   /* 匹配的三种情况: 1.只是终止节点,没有后续; 2.既是终止节点,又有后续; 3.不是终止节点,但有后续 */
   Tree_Node_T child = map_256->children + t_ch;
-  if (*find_pat_p || child->link)
+  if (*pat_end_p || child->link)
     (*pos_p)++;
 
   return child->link == NULL ? NULL : child;
@@ -236,7 +236,7 @@ static void build_map_48(Tree_Node_T t, Pat_Num_T key_num)
     assert(cur_ch > pre_ch);
 #endif 
      *next_p = NULL; map_48->index[cur_ch] = ++i;
-      next_p = (struct Suf_Node **) &map_48->children[i];
+      next_p = (struct Suf_Node **) &map_48->children[i].link;
       pre_ch = cur_ch;
     }
 
