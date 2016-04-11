@@ -1,46 +1,47 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include "share.h"
 #include "common.h"
 #include "queue.h"
 
-extern Queue_t *queue;
+extern Queue_T queue;
 
-Suffix_Node_t *cut_head(Suffix_Node_t *suf_node, Pat_Len_t lss)
+Suf_Node_T cut_head(Suf_Node_T suf_node, Pat_Len_T lss)
 {
-  Pat_Len_t suf_len;
+  Pat_Len_T suf_len;
   
   if ((suf_len = strlen(suf_node->str)) == lss) { /* 该后缀无法再继续分割 */
     free(suf_node);
     return NULL;
-  } 
+  }
 
   memmove(suf_node->str, suf_node->str + lss, suf_len - lss + 1);
   
   return suf_node;
 }
 
-inline Bool_t same_str(Char_t const *s1, Char_t const *s2, Pat_Len_t len)
+bool same_str(Char_T const *s1, Char_T const *s2, Pat_Len_T len)
 {
-  while (len && *s1 == *s2) 
+  while (len && *s1 == *s2)
     len--, s1++, s2++;
   
   return !len;
 }
 
-void push_queue(Expand_Node_t const *expand_node, Pat_Num_t num)
+void push_queue(Tree_Node_T child, Pat_Num_T num)
 {
   while (num--) {
-    if (expand_node->next_level)
-      in_queue(queue, expand_node);
-    expand_node++;
+    if (child->link)
+      Queue_push(queue, child);
+    child++;
   }
 }
 
 #if DEBUG
-void print_str(Char_t const *s, Pat_Len_t len, Char_t terminator)
+void print_str(Char_T const *s, Pat_Len_T len, Char_T terminator)
 {
   while (len--)
     putchar(*s++);
@@ -48,7 +49,7 @@ void print_str(Char_t const *s, Pat_Len_t len, Char_t terminator)
   putchar(terminator);
 }
 
-void print_suffix(Suffix_Node_t *cur_suf)
+void print_suffix(Suf_Node_T cur_suf)
 {
   while (cur_suf) {
     printf("    %s\n", cur_suf->str);

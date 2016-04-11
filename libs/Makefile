@@ -1,67 +1,71 @@
-CC=gcc
-LFLAGS = -shared
-CFLAGS = -O3 -Wall -c -fPIC -I$(INCLUDE)
+SUF = so
+CC = gcc
 
-vpath %.h ./include ../Adaptive/include
-vpath %.c ./src
-vpath %.so ./so
+LINKSO = gcc -shared
+LINKA = ar -rc
+LINK = $(LINKSO)
 
-#OBJS := #$(patsubst ./_c/%.c, %.o, $(wildcard *.c))
-
-OBJS = main.o common.o  makedata.o binary.o stack.o queue.o  BST.o lists.o sorter.o
-SOS = libcommon.so  libmakedata.so libADT.so libbinary.so
-SOPATH = /home/pz/code/libs/so
 INCLUDE = ./include
+CFLAGS = -g -Wall -c -std=c99 -fPIC -I$(INCLUDE)
 
-ADTS = stack.o queue.o BST.o lists.o sorter.o
+APATH = ./a
+SOPATH = ./so
+LIBPATH = $(SOPATH)
 
-a.out: main.o $(SOS) 
-	$(CC) $< -L$(SOPATH)  -lmakedata -lADT  -lbinary -lcommon -lm
-	rm *.o
+vpath %.h $(INCLUDE) ../Adaptive/include
+vpath %.c ./src
+vpath %.so $(SOPATH)
+vpath %.a $(APATH)
 
-$(OBJS) : common.h
+OBJS := $(patsubst %.c,%.o, $(wildcard ./sc/*.c))
 
-main.o: main.c makedata.h stack.h  BST.h lists.h binary.h
+LIBS = libcommon.$(SUF)  libadt.$(SUF) libbinary.$(SUF)
+
+SOS = libcommon.so libbinary.so libadt.so
+a.out: main.o $(SOS)
+	$(CC) $< -L$(LIBPATH) -ladt -lbinary -lcommon -lm
+	rm *.o	
+
+$(OBJS): common.h
+
+main.o: main.c makedata.h stack.h binary.h queue.h
 	$(CC) $(CFLAGS) $< -o $@
 
-libcommon.so: common.o
-	$(CC) $(LFLAGS) $^ -o $(SOPATH)/$@
-common.o: common.c 
+libcommon.$(SUF): common.o
+	$(LINK) $^ -o $(LIBPATH)/$@
+common.o: common.c
 	$(CC) $(CFLAGS) $< -o $@
 
-# libtextools.so: textools.o
-# 	$(CC) $(LFLAGS) $^ -o $(SOPATH)/$@
-# textools.o: textools.c textools.h
+# libmakedata.$(SUF): makedata.o
+# 	$(LINK) $^ -o $(LIBPATH)/$@
+# makedata.o : makedata.c makedata.h
 # 	$(CC) $(CFLAGS) $< -o $@
 
-libmakedata.so: makedata.o
-	$(CC) $(LFLAGS) $^ -o $(SOPATH)/$@
-makedata.o : makedata.c makedata.h common.h
-	$(CC) $(CFLAGS) $< -o $@
 
-libbinary.so: binary.o
-	$(CC) $(LFLAGS) $^ -o $(SOPATH)/$@
+libbinary.$(SUF): binary.o
+	$(LINK) $^ -o $(LIBPATH)/$@
 binary.o: binary.c binary.h
 	$(CC) $(CFLAGS) $< -o $@
 
-libADT.so: $(ADTS)
-	$(CC) $(LFLAGS) $^ -o $(SOPATH)/$@
-stack.o: stack.c stack.h
+
+libadt.$(SUF): queue.o arith.o
+	$(LINK) $^ -o $(LIBPATH)/$@
+#stack.o: stack.c stack.h
+#	$(CC) $(CFLAGS) $< -o $@
+queue.o: queue.c queue.h
 	$(CC) $(CFLAGS) $< -o $@
-queue.o: queue.c queue.h common.h share.h
-	$(CC) $(CFLAGS) -I../Adaptive/include $< -o $@
-BST.o: BST.c BST.h
+#lists.o: lists.c lists.h
+#	$(CC) $(CFLAGS) $< -o $@
+arith.o : arith.c arith.h
 	$(CC) $(CFLAGS) $< -o $@
-lists.o: lists.c lists.h
-	$(CC) $(CFLAGS) $< -o $@
-sorter.o : sorter.c sorter.h share.h
-	$(CC) $(CFLAGS) $< -I../Adaptive/include -o $@		
 
 
-.PHONY: ra ro rso
-ra : ro rso
+.PHONY: clean ro rso ra
+clean : ro rso ra
 	-rm a.out
 ro :
 	-rm *.o
 rso:
 	-rm $(SOPATH)/*.so
+ra:
+	-rm $(APATH)/*.a

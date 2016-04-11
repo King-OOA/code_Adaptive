@@ -1,154 +1,84 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include "common.h"
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include "assert.h"
 #include "queue.h"
+#include "common.h"
 
-/*void test_queue(Queue_t *q)
-  {
-  char op;
-  int value;
+#define T Queue_T
 
-  for (;;) {
-  printf("请输入指令: ");
-  scanf(" %c", &op);
-  while (getchar() != '\n')
-  ;
+struct T {
+  int count;
+  struct elem {
+    void *x;
+    struct elem *next;
+  } *head, *tail;
+};
 
-  switch(op) {
-  case 'i':  
-  printf("请输入值: ");
-  scanf("%d", &value);
-  in_queue(q, value);
-  break;
-  case 'd': out_queue(q);break;
-  case 'f': 
-  if ((value = get_q_first(q)) != EMPTY)
-  printf("第一个元素为: %d", value);
-  else
-  puts("队列空!");
-  break;
-  case 'l': if ((value = get_q_last(q)) != EMPTY)
-  printf("最后一个元素为: %d", value);
-  else
-  puts("队列空!");
-  break;
-  case 'p': print_queue(q);break;
-  case 'q': return;break;
-  default: puts("不合法指令!");
+T Queue_new(void)
+{
+  T q;
+
+  q = MALLOC(1, struct T);
+  
+  q->count = 0;
+  q->tail = q->head = NULL;
+  
+  return q;
+}
+
+bool Queue_empty(T q)
+{
+  assert(q);
+  
+  return q->count == 0;
+}
+
+void Queue_push(T q, void *x)
+{
+  struct elem *t;
+
+  assert(q);
+
+  t = MALLOC(1, struct elem);
+  t->x = x;
+  t->next = NULL;
+  
+  if (Queue_empty(q))
+    q->head = q->tail = t;
+  else {
+    q->tail->next = t;
+    q->tail = t;
   }
-  printf("\n");
+  
+  q->count++;
+}
+
+void *Queue_pop(T q)
+{
+  assert(q);
+  assert(q->count > 0);
+
+  struct elem *t = q->head;
+  q->head = t->next;
+  void *x = t->x;
+  free(t);
+  q->count--;
+  
+  if (Queue_empty(q))
+    q->tail = NULL;
+  
+  return x;
+}
+
+void Queue_free(T *q)
+{
+  assert(q && *q);
+  
+  for (struct elem *t = (*q)->head, *u; t; t = u) {
+    u = t->next;
+    free(t);
   }
 
-  des_queue(q);
-  }*/
-
-Queue_t *make_queue(void)
-{
-     return CALLOC(1, Queue_t);
+  free(*q);
 }
-
-void free_queue(Queue_t *q)
-{
-     clean_queue(q);
-     free(q);
-}
-
-void clean_queue(Queue_t *q) /*清空队列链表，但保留队列结构*/
-{
-     Q_Node_t *free_node;
-
-     while (q->head) {
-          free_node = q->head;
-          q->head = q->head->next;
-          free(free_node);
-     }
-	
-     q->tail = NULL;
-     q->count = 0;
-}
-
-int queue_is_empty(Queue_t *q)
-{
-     return q->count == 0;
-}
-
-void in_queue(Queue_t *q, Q_Value_t value) /*插入一个元素*/
-{
-     Q_Node_t *new_node =  MALLOC(1, Q_Node_t);
-
-     new_node->value = value;
-     new_node->next = NULL;
-
-     if (queue_is_empty(q)) {/*插入第一个节点*/
-          q->head = new_node;
-          q->tail = new_node;
-     } else {	
-          q->tail->next = new_node;
-          q->tail = new_node;
-     }
-
-     q->count++;
-}
-
-Q_Value_t out_queue(Queue_t *q) /*删除一个元素*/
-{
-     Q_Node_t* free_node;
-     Q_Value_t value;
-
-     if (queue_is_empty(q)) {
-          puts("The queue is empty!");
-          return EMPTY;
-     }
-
-     value = q->head->value;
-     free_node = q->head;
-     q->head = q->head->next;
-     free(free_node);
-     q->count--;
-
-     if (queue_is_empty(q)) /*删除了最后一个节点*/
-          q->tail = NULL;
-
-     return value;
-}
-
-Q_Value_t get_q_first(Queue_t *q) /*返回队列第一个元素值，并不删除*/
-{
-     if (queue_is_empty(q))
-          return EMPTY;
-     else
-          return q->head->value;
-}
-
-Q_Value_t get_q_last(Queue_t *q)/*返回队列最后一个元素值，并不删除*/
-{
-     if (queue_is_empty(q))
-          return EMPTY;
-     else	
-          return q->tail->value;
-}
-
-#ifdef DEBUG
-void print_queue(Queue_t *q)
-{
-     Q_Node_t *index;
-     FILE *fp_result;
-
-     fp_result = fopen("./queue_content", "w");
-     
-     if (queue_is_empty(q)) {
-          printf("空队列!\n");
-          fputs("空队列!\n", fp_result);
-          return;
-     }
-
-     printf("队列中共有 %ld 元素:\n ", q->count);
-     fprintf(fp_result, "队列中共有 %ld 元素:\n ", q->count);
-     for (index = q->head; index; index = index->next) {
-          printf("%ld ", index->value);
-          fprintf(fp_result, "%ld ", index->value);
-     }
-
-     fclose(fp_result);
-}
-#endif

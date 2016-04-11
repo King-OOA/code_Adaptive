@@ -14,7 +14,7 @@ FILE *Fopen(const char *, const char *);
 void Fclose(FILE *);
 
 char *str_cat(const char *, const char *);
-int rand_int(int, int);
+int rand_range(int, int);
 
 int get_file_alphabet(char const *filename);
 size_t  get_file_size(FILE *fp);

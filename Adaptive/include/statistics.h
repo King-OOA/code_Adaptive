@@ -1,19 +1,20 @@
-#ifndef STATISTICS_H
-#define STATISTICS_H
+#pragma once
 
 #include "share.h"
-
-typedef struct num_num_elmt {	/* 统计元素 */
-  unsigned num_1;
-  unsigned num_2;
-} Num_Num_t;
+#include <stdint.h>
 
 
-typedef struct str_num_elmt {	/* 统计元素 */
+struct num_num {	/* 统计元素 */
+  uint32_t num_1;
+  uint32_t num_2;
+};
+
+struct str_num {	/* 统计元素 */
   char name[100];
-  unsigned num;
-} Str_Num_t;
+  uint32_t num;
+};
+
+typedef struct num_num Num_Num_T;
+typedef struct str_num Str_Num_T;
 
 void print_statistics(void);
-
-#endif 

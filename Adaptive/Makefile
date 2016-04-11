@@ -1,41 +1,46 @@
-OBJS = main.o share.o hash.o map.o array.o statistics.o #:= $(patsubst %.c, %.o, $(wildcard *.c))
-CC=gcc
-LIBPATH = /home/pz/code/libs/so
+OBJS = main.o share.o hash.o map.o array.o statistics.o sorter.o
 
-INCLUDE_1 = /home/pz/code/libs/include
-INCLUDE_2 = /home/pz/code/Adaptive/include
+#OBJS := $(patsubst %.c, %.o, $(wildcard ./src/*.c))
+CC = gcc
+
+LIBPATH = ../libs/so
+
+INCLUDE_1 = ../libs/include
+INCLUDE_2 = ./include
 
 vpath %.h $(INCLUDE_1) $(INCLUDE_2)
-vpath %.c ./src/
+vpath %.c ./src
 
-CFLAGS = -Wall -c -g -I$(INCLUDE_1) -I$(INCLUDE_2)
+CFLAGS = -Wall -c -std=c99 -g -I$(INCLUDE_1) -I$(INCLUDE_2)
 
 a.test.out:  $(OBJS)
-	$(CC) $(OBJS) -L$(LIBPATH) -lADT -lmakedata -lcommon  -lm -lbinary -o $@
+	$(CC) $(OBJS) -L$(LIBPATH) -ladt -lcommon -lm -lbinary -o $@
 	rm *.o
 
-main.o: main.c share.h hash.h common.h binary.h sorter.h
+$(OBJS): share.h
+
+main.o: main.c hash.h common.h map.h binary.h sorter.h array.h
 	$(CC) $(CFLAGS) $< -o $@
 
-share.o: share.c share.h common.h
+share.o: share.c common.h
 	$(CC) $(CFLAGS) $< -o $@
 
-hash.o: hash.c hash.h share.h common.h
+hash.o: hash.c hash.h common.h
 	$(CC) $(CFLAGS) $< -o $@
 
-map.o: map.c share.h common.h
+map.o: map.c map.h common.h
 	$(CC) $(CFLAGS) $< -o $@
 
-array.o: array.c share.h common.h
+array.o: array.c array.h common.h
 	$(CC) $(CFLAGS) $< -o $@	
 
-
-statistics.o: statistics.c share.h 
+statistics.o: statistics.c statistics.h
 	$(CC) $(CFLAGS) $< -o $@	
 
+sorter.o : sorter.c sorter.h
+	$(CC) $(CFLAGS) $<  -o $@
 
-.PHONY: ro ra
-ra : ro
-	-rm a.out
-ro :
-	-rm $(OBJS)
+
+.PHONY: ra
+ra :
+	-rm a.test.out

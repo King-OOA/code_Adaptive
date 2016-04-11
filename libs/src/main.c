@@ -7,14 +7,16 @@
 #include <sys/stat.h>
 #include <assert.h>
 #include "common.h"
-#include "textools.h"
 #include "makedata.h"
 #include "stack.h"
-#include "BST.h"
+#include "queue.h"
+//#include "BST.h"
 #include <limits.h>
-#include "lists.h"
+//#include "lists.h"
 #include "binary.h"
+#include "arith.c"
 #include <stdint.h>
+#include <ctype.h>
 
 #undef malloc
 
@@ -46,10 +48,57 @@ void test()
   printf("%p\n", &local);
 }
 
+int linenum;
+
+int get_word(FILE *fp, char *buf, int size)
+{
+     int i, c;
+
+     for (c = getc(fp); c != EOF && isspace(c); c = getc(fp))
+	  if (c == '\n')
+	       linenum++;   
+     
+     for (i = 0; c != EOF && !isspace(c); c = getc(fp))
+	  if (i < size - 1)
+	       buf[i++] = c;
+
+     if (i < size) buf[i] = '\0';
+
+     if (c != EOF) ungetc(c, fp);
+
+     return buf[0] != '\0';
+}
+
+void double_word(char *file_name, FILE *fp)
+{
+     char prev[128], word[128];
+     
+     linenum = 1;
+     prev[0] = '\0';
+
+     while (get_word(fp, word, sizeof(word))) {
+	  if (isalpha(word[0]) && strcmp(word, prev) == 0) {
+	       if (file_name != NULL)
+		    printf("%s:", file_name);
+	       printf("%d: %s\n", linenum, word);
+	  }
+	  strcpy(prev, word);
+     }
+}
+
 int main(int argc, char **argv)
 {
+     int i = 1;
+     FILE *fp;
 
-    test();
+     while (argv[i] != NULL) {
+	  fp = Fopen(argv[i], "r");
+	  double_word(argv[i], fp);
+     }
+
+     if (argc == 1)
+	  double_word(NULL, stdin);
+}
 
 
   //  printf("key:%d, value: %d\n", p->array[1].key, p->array[8].value);
@@ -59,6 +108,5 @@ int main(int argc, char **argv)
   //str.p = S;
   
 
-}
 
 

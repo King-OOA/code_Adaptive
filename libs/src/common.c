@@ -70,7 +70,7 @@ int get_file_alphabet(char const *filename)
     ifile = Fopen(filename,"rb");
     
     /* 分块读取文件, 并累加各字符数 */
-    while (n = fread(buf, 1, 1024*1024, ifile))
+    while ((n = fread(buf, 1, 1024*1024, ifile)))
         while (n--)
             sigma[buf[n]]++;
 
@@ -148,12 +148,12 @@ void *clloc(size_t num, size_t size, const char *file, const char *fun, int line
 }
 
 /* 带错误处理的fopen */
-FILE *Fopen(const char *name, const char *mode)
+FILE *Fopen(const char *file_name, const char *mode)
 {
     FILE *fp;
     
-    if ((fp = fopen(name, mode)) == NULL) {
-        perror(name);
+    if ((fp = fopen(file_name, mode)) == NULL) {
+        perror(file_name);
         exit(EXIT_FAILURE);
     }
      

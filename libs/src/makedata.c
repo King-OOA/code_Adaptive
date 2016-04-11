@@ -237,7 +237,7 @@ Pat_Set_t *cre_pat_set(const char *pats_file_name)
     Pat_Set_t *pat_set;
      
     fp_pats = Fopen(pats_file_name, "rb");
-
+    
     pat_set = MALLOC(1, Pat_Set_t);
     pat_set->pats_file_name = strdup(pats_file_name);
     pat_set->pat_list = NULL;

@@ -1,30 +1,7 @@
-#ifndef ARRAY_H
-#define ARRAY_H
+#pragma once
 
 #include "share.h"
 
-typedef struct single_str_t {
-  Expand_Node_t expand_node[1];
-  Pat_Len_t str_len;
-  Char_t str[];
-} Single_Str_t;
+void build_array(Tree_Node_T t, Pat_Num_T str_num, Pat_Len_T str_len);
 
-typedef struct str_array {
-  Pat_Num_t str_num;
-  Pat_Len_t str_len;
-  Expand_Node_t *expand_nodes;	/* 外置扩展节点数组 */
-  union {
-    Flag_t flag[POINTER_SIZE];
-    Flag_t *p;
-  } pat_end_flag;
-  Char_t str_buf[];
-} Str_Array_t;
-
-typedef struct map_655356 {
-  Expand_Node_t expand_nodes[65536];
-  Flag_t pat_end_flag[65536/8];
-} Map_65536_t;
-
-void build_array(Expand_Node_t *expand_node, Pat_Num_t str_num, Pat_Len_t str_len);
-
-#endif 
+void build_map_65536(Tree_Node_T t);

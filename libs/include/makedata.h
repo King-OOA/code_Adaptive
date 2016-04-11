@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "textools.h"
 
 #define MIN_PAT_LEN 1
 #define MAX_PAT_LEN 100
