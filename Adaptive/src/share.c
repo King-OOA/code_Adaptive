@@ -31,7 +31,7 @@ bool same_str(Char_T const *s1, Char_T const *s2, Pat_Len_T len)
   return !len;
 }
 
-void push_queue(Tree_Node_T child, Pat_Num_T num)
+void push_children(Tree_Node_T child, Pat_Num_T num)
 {
   while (num--) {
     if (child->link)

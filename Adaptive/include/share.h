@@ -81,7 +81,7 @@ struct Tree_Node {
 
 Suf_Node_T cut_head(Suf_Node_T suf_node, Pat_Len_T lsp);
 bool same_str(Char_T const *s1, Char_T const *s2, Pat_Len_T len);
-void push_queue(Tree_Node_T child, Pat_Num_T num);
+void push_children(Tree_Node_T child, Pat_Num_T num);
 void print_str(Char_T const *s, Pat_Len_T len, Char_T terminator);
 
 void print_suffix(Suf_Node_T cur_suf);

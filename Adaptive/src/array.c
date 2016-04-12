@@ -173,7 +173,7 @@ static void build_single_str(Tree_Node_T t, Pat_Len_T str_len)
   t->link = single_str;
   t->match_fun = (Match_Fun_T) match_single_str;
 
-  push_queue(&single_str->child, 1);
+  push_children(&single_str->child, 1);
 }
 
 static Str_Array_T make_str_array(Pat_Num_T str_num, Pat_Len_T str_len)
@@ -228,7 +228,7 @@ static void build_str_array(Tree_Node_T t, Pat_Num_T str_num, Pat_Len_T str_len)
   t->link = str_array;
   t->match_fun = (Match_Fun_T) (str_num > SMALL_ARRAY_SIZE ? array_binary_match : array_ordered_match);
 
-  push_queue(str_array->children, str_num);
+  push_children(str_array->children, str_num);
 }
 
 void build_map_65536(Tree_Node_T t)
@@ -264,7 +264,7 @@ void build_map_65536(Tree_Node_T t)
   t->link = map_65536;
   t->match_fun = (Match_Fun_T) match_map_65536;
 
-  push_queue(map_65536->children, 65536);
+  push_children(map_65536->children, 65536);
 }
 
 void build_array(Tree_Node_T t, Pat_Num_T str_num, Pat_Len_T str_len)

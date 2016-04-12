@@ -8,22 +8,23 @@ LINK = $(LINKSO)
 INCLUDE = ./include
 CFLAGS = -g -Wall -c -std=c99 -fPIC -I$(INCLUDE)
 
-APATH = ./a
-SOPATH = ./so
-LIBPATH = $(SOPATH)
+#APATH = ./a
+#SOPATH = ./so
+LIBPATH = /usr/local/lib/
 
 vpath %.h $(INCLUDE) ../Adaptive/include
 vpath %.c ./src
-vpath %.so $(SOPATH)
-vpath %.a $(APATH)
+#vpath %.so $(SOPATH)
+#vpath %.a $(APATH)
 
-OBJS := $(patsubst %.c,%.o, $(wildcard ./sc/*.c))
+#OBJS := $(patsubst %.c,%.o, $(wildcard ./sc/*.c))
 
-LIBS = libcommon.$(SUF)  libadt.$(SUF) libbinary.$(SUF)
 
 SOS = libcommon.so libbinary.so libadt.so
+LIBS = $(SOS) #-ladt -lcommon -lm -lbinary 
+
 a.out: main.o $(SOS)
-	$(CC) $< -L$(LIBPATH) -ladt -lbinary -lcommon -lm
+	$(CC) $(CFLAGS) -ladt -lcommon -lm -lbinary -o $@ 
 	rm *.o	
 
 $(OBJS): common.h
@@ -32,7 +33,7 @@ main.o: main.c makedata.h stack.h binary.h queue.h
 	$(CC) $(CFLAGS) $< -o $@
 
 libcommon.$(SUF): common.o
-	$(LINK) $^ -o $(LIBPATH)/$@
+	$(LINK) $^ -o $(LIBPATH)$@
 common.o: common.c
 	$(CC) $(CFLAGS) $< -o $@
 
@@ -41,15 +42,14 @@ common.o: common.c
 # makedata.o : makedata.c makedata.h
 # 	$(CC) $(CFLAGS) $< -o $@
 
-
 libbinary.$(SUF): binary.o
-	$(LINK) $^ -o $(LIBPATH)/$@
+	$(LINK) $^ -o $(LIBPATH)$@
 binary.o: binary.c binary.h
 	$(CC) $(CFLAGS) $< -o $@
 
 
 libadt.$(SUF): queue.o arith.o
-	$(LINK) $^ -o $(LIBPATH)/$@
+	$(LINK) $^ -o $(LIBPATH)$@
 #stack.o: stack.c stack.h
 #	$(CC) $(CFLAGS) $< -o $@
 queue.o: queue.c queue.h

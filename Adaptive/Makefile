@@ -1,20 +1,23 @@
 OBJS = main.o share.o hash.o map.o array.o statistics.o sorter.o
+LIBS = -ladt -lcommon -lm -lbinary 
 
 #OBJS := $(patsubst %.c, %.o, $(wildcard ./src/*.c))
 CC = gcc
 
-LIBPATH = ../libs/so
+#LIBPATH = ../libs/so
 
 INCLUDE_1 = ../libs/include
 INCLUDE_2 = ./include
 
 vpath %.h $(INCLUDE_1) $(INCLUDE_2)
 vpath %.c ./src
+#vpath lib%.a $(LIBPATH)
+#vpath lib%.so $(LIBPATH)
 
 CFLAGS = -Wall -c -std=c99 -g -I$(INCLUDE_1) -I$(INCLUDE_2)
 
-a.test.out:  $(OBJS)
-	$(CC) $(OBJS) -L$(LIBPATH) -ladt -lcommon -lm -lbinary -o $@
+a.test.out:  $(OBJS) $(LIBS)
+	$(CC) $^ -o $@
 	rm *.o
 
 $(OBJS): share.h

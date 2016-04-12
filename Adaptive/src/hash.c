@@ -91,5 +91,5 @@ void build_hash_table(Tree_Node_T t, Pat_Num_T str_num, Pat_Len_T str_len)
   t->link = hash_table;
   t->match_fun = (Match_Fun_T) match_hash;
   
-  push_queue(hash_table->children, table_size);
+  push_children(hash_table->children, table_size);
 }

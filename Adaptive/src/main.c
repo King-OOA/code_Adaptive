@@ -138,7 +138,7 @@ Tree_Node_T build_AMT(Char_T *pats_file_name)
   root->link = pat_list;
   Fclose(pats_fp);
   
-  Queue_T queue = Queue_new();
+  queue = Queue_new();
   Queue_push(queue, root);
   while (!Queue_empty(queue)) /* 构建整个AMT */
      build_tree_node(Queue_pop(queue));
@@ -199,8 +199,11 @@ void matching(Tree_Node_T root, Char_T *text_buf, size_t text_len, bool output)
   Char_T matched_pat_buf[500];
   
   clock_t start = clock();
+  int i = 0;
+  
 
   for (Char_T *entrance  = text_buf; entrance < text_buf + text_len; entrance++) {
+    i++;
     bool find_pat = check_entrance(root, entrance, matched_pat_buf, output);
 #if PROFILING
     if (find_pat && output)

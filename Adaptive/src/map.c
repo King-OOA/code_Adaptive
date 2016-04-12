@@ -70,7 +70,7 @@ static Tree_Node_T match_map_4(Map_4_T map_4, Char_T const **pos_p, bool *pat_en
 #endif
 
   Char_T t_ch = **pos_p, *keys = map_4->keys;	/* t_ch 为目标字符 */
-  uint8_t i, key_num = map_4->key_num;
+  int8_t i, key_num = map_4->key_num;
 
   /* key是有序排列的 */
   for (i = 0; i < key_num && keys[i] < t_ch; i++)
@@ -93,10 +93,10 @@ static Tree_Node_T match_map_16(Map_16_T map_16, Char_T const **pos_p, bool *pat
 #endif
 
   Char_T t_ch = **pos_p;
-  int8_t low = 0, high = map_16->key_num - 1, mid; /* 必须是有符号数 */
+  int8_t low = 0, high = map_16->key_num - 1; /* 必须是有符号数 */
 
   while (low <= high) {
-    mid = (low + high) >> 1;
+    int8_t mid = (low + high) >> 1;
     Char_T key = map_16->keys[mid];
  
     if (t_ch < key)
@@ -175,7 +175,7 @@ void build_map_1(Tree_Node_T t)
   t->match_fun = (Match_Fun_T) match_map_1;
   t->link = map_1;
 
-  push_queue(&map_1->child, 1);
+  push_children(&map_1->child, 1);
 }
 
 #define BUILD_MAP_4_OR_16(n)						\
@@ -185,7 +185,7 @@ static void build_map_##n(Tree_Node_T t, Pat_Num_T key_num)		\
   Map_##n##_T map_##n = CALLOC(1, struct Map_##n);			\
   map_##n->key_num = key_num;						\
 									\
-  struct Suf_Node **next_p = (struct Suf_Node **) &map_##n->children[0]; /* 初始化 */ \
+  struct Suf_Node **next_p = (struct Suf_Node **) &map_##n->children[0].link; /* 初始化 */ \
   Char_T cur_ch, pre_ch = 0;						\
   int8_t i = -1; /* 索引初始值 */					\
   /*具有相同首字符的后缀,连接在一起,形成段,每段对应keys中的一个字符*/	\
@@ -194,7 +194,7 @@ static void build_map_##n(Tree_Node_T t, Pat_Num_T key_num)		\
    /*判断是否是新一段的开始*/						\
     if ((cur_ch = *cur_suf->str) != pre_ch) {				\
       *next_p = NULL; map_##n->keys[++i] = cur_ch;  /* 当前链表截止 */	\
-      next_p = (struct Suf_Node **) &map_##n->children[i]; /*新一段的链表头 */ \
+      next_p = (struct Suf_Node **) &map_##n->children[i].link; /*新一段的链表头 */ \
       pre_ch = cur_ch;							\
     }									\
     /* 将当前后缀插入到对应孩子节点中 */				\
@@ -205,11 +205,11 @@ static void build_map_##n(Tree_Node_T t, Pat_Num_T key_num)		\
   }									\
 									\
   *next_p = NULL;							\
-									\
+  assert(key_num == i+1);						\
   t->link = map_##n;							\
   t->match_fun = (Match_Fun_T) match_map_##n;				\
   									\
-  push_queue(map_##n->children, key_num);				\
+  push_children(map_##n->children, key_num);				\
 }
 
 BUILD_MAP_4_OR_16(4)
@@ -221,7 +221,7 @@ static void build_map_48(Tree_Node_T t, Pat_Num_T key_num)
   Map_48_T map_48 = CALLOC(1, struct Map_48);
   memset(map_48->index, -1, 256);
 
-  struct Suf_Node **next_p = (struct Suf_Node **) &map_48->children[0]; /* 初始化 */
+  struct Suf_Node **next_p = (struct Suf_Node **) &map_48->children[0].link; /* 初始化 */
   UC_T cur_ch, pre_ch = 0;
   int8_t i = -1; /* 0 ~ 47 */
 
@@ -255,14 +255,14 @@ static void build_map_48(Tree_Node_T t, Pat_Num_T key_num)
   t->link = map_48;
   t->match_fun = (Match_Fun_T) match_map_48;
 
-  push_queue(map_48->children, key_num);
+  push_children(map_48->children, key_num);
 }
 
 static void build_map_256(Tree_Node_T t)
 {
   Map_256_T map_256 = CALLOC(1, struct Map_256);
 
-  struct Suf_Node **next_p = (struct Suf_Node **) &map_256->children[0]; /* 初始化 */
+  struct Suf_Node **next_p = (struct Suf_Node **) &map_256->children[0].link; /* 初始化 */
   UC_T pre_ch = 0, cur_ch;
 
   for (Suf_Node_T cur_suf = t->link, next_suf; cur_suf; cur_suf = next_suf) {
@@ -275,7 +275,7 @@ static void build_map_256(Tree_Node_T t)
     assert(cur_ch > pre_ch);
 #endif 
       *next_p = NULL;
-      next_p = (struct Suf_Node **) &map_256->children[cur_ch];
+      next_p = (struct Suf_Node **) &map_256->children[cur_ch].link;
       pre_ch = cur_ch;
     }
 
@@ -290,7 +290,7 @@ static void build_map_256(Tree_Node_T t)
   t->link = map_256;
   t->match_fun = (Match_Fun_T) match_map_256;
 
-  push_queue(map_256->children, 256);
+  push_children(map_256->children, 256);
 }
 
 void build_map(Tree_Node_T t, Pat_Num_T key_num)
