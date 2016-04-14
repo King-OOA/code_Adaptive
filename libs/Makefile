@@ -1,12 +1,12 @@
 SUF = so
 CC = gcc
 
-LINKSO = gcc -shared
+LINKSO = gcc -O3 -shared -std=c99
 LINKA = ar -rc
 LINK = $(LINKSO)
 
 INCLUDE = ./include
-CFLAGS = -g -Wall -c -std=c99 -fPIC -I$(INCLUDE)
+CFLAGS = -O2 -Wall -c -std=c99 -fPIC -I$(INCLUDE)
 
 #APATH = ./a
 #SOPATH = ./so

@@ -1,5 +1,4 @@
-#ifndef MAKEDATA_H
-#define MAKEDATA_H
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,8 +41,3 @@ Pat_Set_t *cre_pat_set(const char *);
 void des_pat_set(Pat_Set_t *);
 void print_pat_set(const Pat_Set_t *, int);
 Pat_Node_t *cre_pat_node(const char *); 
-
-
-
-
-#endif

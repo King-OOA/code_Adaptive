@@ -1,7 +1,4 @@
-#ifndef QUEUE_H
-#define QUEUE_H
-
-//#progma once
+#pragma once
 
 #include <stdbool.h>
 
@@ -17,5 +14,3 @@ extern void *Queue_pop(T q);
 extern void Queue_free(T *q);
 
 #undef T
-
-#endif 

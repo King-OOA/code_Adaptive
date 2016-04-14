@@ -152,13 +152,13 @@ static Single_Str_T make_single_str(Pat_Len_T str_len)
 }
 
 /* 所有后缀前str_len个字符相同, sing_str肯定是模式终止节点 */
-static void build_single_str(Tree_Node_T t, Pat_Len_T str_len)
+static Single_Str_T build_single_str(Suf_Node_T suf_list, Pat_Len_T str_len)
 {
   Single_Str_T single_str = make_single_str(str_len);
-  memcpy(single_str->str, ((Suf_Node_T) t->link)->str, str_len);
+  memcpy(single_str->str, suf_list->str, str_len);
 
   struct Suf_Node **next_p = (struct Suf_Node **) &single_str->child.link;
-  for (Suf_Node_T cur_suf = t->link, next_suf; cur_suf; cur_suf = next_suf) {
+  for (Suf_Node_T cur_suf = suf_list, next_suf; cur_suf; cur_suf = next_suf) {
     next_suf = cur_suf->next;
 #if DEBUG
     assert(same_str(cur_suf->str, single_str->str, str_len));
@@ -170,10 +170,9 @@ static void build_single_str(Tree_Node_T t, Pat_Len_T str_len)
   
   *next_p = NULL;
 
-  t->link = single_str;
-  t->match_fun = (Match_Fun_T) match_single_str;
-
   push_children(&single_str->child, 1);
+
+  return single_str;
 }
 
 static Str_Array_T make_str_array(Pat_Num_T str_num, Pat_Len_T str_len)
@@ -192,7 +191,7 @@ static Str_Array_T make_str_array(Pat_Num_T str_num, Pat_Len_T str_len)
   return new_array;
 }
 
-static void build_str_array(Tree_Node_T t, Pat_Num_T str_num, Pat_Len_T str_len)
+static Str_Array_T build_str_array(Suf_Node_T suf_list, Pat_Num_T str_num, Pat_Len_T str_len)
 {
   Str_Array_T str_array = make_str_array(str_num, str_len); /* 构建str_array */
   Char_T *cur_str, prev_str[str_len], *str_buf = str_array->str_buf; /* prev_str为变长数组 */
@@ -205,7 +204,7 @@ static void build_str_array(Tree_Node_T t, Pat_Num_T str_num, Pat_Len_T str_len)
   
   struct Suf_Node **next_p = (struct Suf_Node **) &str_array->children[0].link;
   
-  for (Suf_Node_T cur_suf = t->link, next_suf; cur_suf; cur_suf = next_suf) {
+  for (Suf_Node_T cur_suf = suf_list, next_suf; cur_suf; cur_suf = next_suf) {
     next_suf = cur_suf->next;
     if (!same_str((cur_str = cur_suf->str), prev_str, str_len)) {
       *next_p = NULL; memcpy(str_buf + (++i) * str_len, cur_str, str_len); /*原链表终止, 指向新链表头 */
@@ -225,24 +224,19 @@ static void build_str_array(Tree_Node_T t, Pat_Num_T str_num, Pat_Len_T str_len)
   assert(str_num == i+1);
 #endif 
 
-  t->link = str_array;
-  t->match_fun = (Match_Fun_T) (str_num > SMALL_ARRAY_SIZE ? array_binary_match : array_ordered_match);
-
   push_children(str_array->children, str_num);
+
+  return str_array;
 }
 
-void build_map_65536(Tree_Node_T t)
+static Map_65536_T build_map_65536(Suf_Node_T suf_list)
 {
   Map_65536_T map_65536 = CALLOC(1, struct Map_65536);
-
-#if PROFILING
-  type_num[MAP_65536].num++;
-#endif
 
   struct Suf_Node **next_p = (struct Suf_Node **) &map_65536->children[0].link; /* 初始化 */
   uint16_t pre_block = 0, cur_block;
 
-  for (Suf_Node_T cur_suf = t->link, next_suf; cur_suf; cur_suf = next_suf) {
+  for (Suf_Node_T cur_suf = suf_list, next_suf; cur_suf; cur_suf = next_suf) {
     next_suf = cur_suf->next;
     if ((cur_block = block_2(cur_suf->str)) != pre_block) { /* 终止上一个链表,跳转到新链表头 */
 #if DEBUG
@@ -261,10 +255,9 @@ void build_map_65536(Tree_Node_T t)
 
   *next_p = NULL;
 
-  t->link = map_65536;
-  t->match_fun = (Match_Fun_T) match_map_65536;
-
   push_children(map_65536->children, 65536);
+
+  return map_65536;
 }
 
 void build_array(Tree_Node_T t, Pat_Num_T str_num, Pat_Len_T str_len)
@@ -279,12 +272,19 @@ void build_array(Tree_Node_T t, Pat_Num_T str_num, Pat_Len_T str_len)
 #endif
 
      if (str_num == 1) {
-       build_single_str(t, str_len);
+       t->link = build_single_str(t->link, str_len);
+       t->match_fun = (Match_Fun_T) match_single_str;
 #if PROFILING
        type_num[SINGLE_STR].num++;
 #endif
-     } else {
-       build_str_array(t, str_num, str_len);
+     } else if (str_len == 2 && str_num >= NUM_TO_BUILD_65536) {
+       t->link = build_map_65536(t->link);
+       t->match_fun = (Match_Fun_T) match_map_65536;
+#if PROFILING
+       type_num[MAP_65536].num++;
+#endif
+     } else {t->link = build_str_array(t->link, str_num, str_len);
+       t->match_fun = (Match_Fun_T) (str_num > SMALL_ARRAY_SIZE ? array_binary_match : array_ordered_match);
 #if PROFILING
        type_num[ARRAY].num++;
 #endif

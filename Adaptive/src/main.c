@@ -26,6 +26,19 @@ extern Num_Num_T access_depth[LLP];
 extern unsigned total_nodes;
 #endif 
 
+#if DEBUG
+void print_pat_list(Suf_Node_T list_head)
+{
+  puts("the pat list");
+  
+  while (list_head) {
+    assert(strlen(list_head->str));
+    printf("%s\n", list_head->str);
+    list_head = list_head->next;
+  }
+}
+#endif 
+
 static Suf_Node_T make_suffix_node(Char_T const *pat, Pat_Len_T pat_len)
 {
      Suf_Node_T new_suf_node;
@@ -107,29 +120,17 @@ static void build_tree_node(Tree_Node_T t)
   /* 自适应策略 */
   if (lss == 1) /* 单字符*/
     build_map(t, ndp);
-  else if (lss == 2 && ndp >= NUM_TO_BUILD_65536) /* 双字符块映射 */
-    build_map_65536(t);
   else if (ndp < NUM_TO_BUILD_HASH)
     build_array(t, ndp, lss);
   else
     build_hash_table(t, ndp, lss);
 }
 
-#if DEBUG
-void print_pat_list(Suf_Node_T list_head)
-{
-  while (list_head) {
-    assert(strlen(list_head->str));
-    list_head = list_head->next;
-  }
-}
-#endif 
-
 /* 预处理*/
 Tree_Node_T build_AMT(Char_T *pats_file_name)
 {
   FILE *pats_fp = Fopen(pats_file_name, "rb");
-  fprintf(stderr, "\nConstructing Adaptive Structures...\n"); fflush(stdout);
+  fprintf(stderr, "\nBuilding AMT...\n"); fflush(stdout);
 
   clock_t start = clock();
   Suf_Node_T pat_list = list_radix_sort(read_pats(pats_fp)); /* 读取模式集,并按模式串字典序排序 */
@@ -143,7 +144,7 @@ Tree_Node_T build_AMT(Char_T *pats_file_name)
   while (!Queue_empty(queue)) /* 构建整个AMT */
      build_tree_node(Queue_pop(queue));
   clock_t end = clock();
-  fprintf(stderr, "Done!  \n%f\n",
+  fprintf(stderr, "Done! (%f)\n",
 	  (double) (end - start) / CLOCKS_PER_SEC);
 
   Queue_free(&queue);
@@ -160,7 +161,7 @@ static bool check_entrance(Tree_Node_T t, Char_T const *entrance, Char_T *matche
   uint8_t depth = 0;
 #endif
   
-  while (t) {
+  while (t && t->link) { /*非: 匹配失败或已到达叶节点 */
     t = t->match_fun(t->link, &p, &pat_end);
     
 #if PROFILING
@@ -199,11 +200,8 @@ void matching(Tree_Node_T root, Char_T *text_buf, size_t text_len, bool output)
   Char_T matched_pat_buf[500];
   
   clock_t start = clock();
-  int i = 0;
-  
 
   for (Char_T *entrance  = text_buf; entrance < text_buf + text_len; entrance++) {
-    i++;
     bool find_pat = check_entrance(root, entrance, matched_pat_buf, output);
 #if PROFILING
     if (find_pat && output)
@@ -213,7 +211,7 @@ void matching(Tree_Node_T root, Char_T *text_buf, size_t text_len, bool output)
   
   clock_t end = clock();
   
-  fprintf(stderr, "Done!  \n%f\n",
+  fprintf(stderr, "\nDone! (%f)\n",
 	  (double) (end - start) / CLOCKS_PER_SEC);
 }
 
@@ -221,34 +219,32 @@ int main(int argc, char **argv)
 {
   bool output = false, show_sta_info = false;
   Char_T opt;
- 
-  char *pats_file_name = argv[1];
-  char *text_file_name = argv[2];
- 
+  
 /* 处理命令行参数 */
   if (argc > 3) 		/* 解析随后的参数 */
-    for (argv += 3; *argv && **argv == '-'; argv++)
-      while ((opt = *++*argv))
+    for (char **arg = argv + 3; *arg && **arg == '-'; arg++)
+      while ((opt = *++*arg))
 	switch (opt) {
 	case 'o' : output = true; break; /* -o表示显示匹配结果 */
 	case 's' : show_sta_info = true; break;   /* -s表示显示统计信息 */
 	default : fprintf(stderr, "非法命令行参数!\n"); exit(EXIT_FAILURE);
 	}
+
   /* 构建AMt */
-  Tree_Node_T root = build_AMT(pats_file_name); /* argv[1]是模式集文件名 */
+  Tree_Node_T root = build_AMT(argv[1]); /* argv[1]是模式集文件名 */
 
   /* 读文本 */
-  fprintf(stderr, "\nLoading text..."); fflush(stdout);
+  fprintf(stderr, "\nLoading text...\n"); fflush(stdout);
   size_t file_size;
-  Char_T *text_buf = load_file(text_file_name, &file_size);
+  Char_T *text_buf = load_file(argv[2], &file_size); /* argv[2]是文本文件名 */
 
   /* 匹配文本 */
-  matching(root, text_buf, file_size, output); /* argv[2]是文本文件名 */
+  matching(root, text_buf, file_size, output);
   fprintf(stderr, "\nTotal matched number: %u\n", match_num);
   
 #if PROFILING
   if (show_sta_info)
-    print_statistics(); /* 打印程序运行过程中的各种统计信息 */
+    print_statistics(file_size); /* 打印程序运行过程中的各种统计信息 */
 #endif
 
 }

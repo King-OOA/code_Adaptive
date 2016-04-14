@@ -1,5 +1,5 @@
-#ifndef BINARY_H
-#define BINARY_H
+#pragma once 
+
 #include <stdio.h>
 
 typedef unsigned char *byte_p;
@@ -14,5 +14,3 @@ int test_bit(const unsigned char *bitmap, unsigned i);
 int is_odd(long n);
 int is_even(long n);
 int logn(unsigned long n);
-
-#endif 

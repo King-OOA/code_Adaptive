@@ -2,7 +2,7 @@
 
 #include "share.h"
 #include <stdint.h>
-
+#include <stdio.h>
 
 struct num_num {	/* 统计元素 */
   uint32_t num_1;
@@ -17,4 +17,4 @@ struct str_num {	/* 统计元素 */
 typedef struct num_num Num_Num_T;
 typedef struct str_num Str_Num_T;
 
-void print_statistics(void);
+void print_statistics(size_t text_len);

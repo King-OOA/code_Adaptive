@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include "statistics.h"
 #include "share.h"
+#include <assert.h>
 
 uint32_t match_num;
 
@@ -62,15 +63,14 @@ static int8_t get_digits(uint32_t num)
   return i;
 }
 
-void print_statistics(void)
+void print_statistics(size_t text_len)
 {
   int8_t digits;
-  uint32_t total_num, num;
+  uint32_t total_num, num, total_calls;
   double percent;
   
   /* 打印各种结构的数量 */
-  printf("\nNumber of Different Structures:\n\n");
-  printf("Total:%u\n", total_nodes);
+  printf("\nAMT: %u nodes\n", total_nodes);
   total_num = 0;
   for (int8_t i = 1; i < TYPE_NUM; i++)
     total_num += type_num[i].num;
@@ -81,10 +81,12 @@ void print_statistics(void)
     printf("%-13s : %*u (%5.2f%%)\n", type_num[i].name, digits, type_num[i].num, ((double) type_num[i].num / total_num) * 100.0);
 
   /* 打印访问深度 */
-  printf("\nAccess depth:\n\n");
-  total_num = 0;
-  for (int32_t i = 1; i < LLP; i++)
+  total_calls = total_num = 0;
+  for (int32_t i = 1; i < LLP; i++) {
     total_num += access_depth[i].num_2;
+    total_calls += i * access_depth[i].num_2;
+  }
+  printf("\nAccess depth: %lf (avg)\n", (double) total_calls / text_len);
   qsort(access_depth, LLP, sizeof(Num_Num_T), num_num_cmp);
   digits = get_digits(access_depth[LLP-1].num_2); /* 最大数的位数 */
   /* 从大到小打印 */
@@ -93,10 +95,11 @@ void print_statistics(void)
       printf("%2u: %*u (%5.2f%%)\n", access_depth[i].num_1, digits, num, percent);
 
   /* 打印匹配函数调用次数 */
-  printf("\nNumber of Function Calls:\n\n");
+  printf("\nFunction calls:\n");
   total_num = 0;
   for (int8_t i = 0; i < MATCH_FUN_NUM; i++)
     total_num += fun_calls[i].num;
+  assert(total_num == total_calls);
   qsort(fun_calls, MATCH_FUN_NUM, sizeof(Str_Num_T), str_num_cmp);
   digits = get_digits(fun_calls[MATCH_FUN_NUM-1].num); /* 最大数的位数 */
   /* 从大到小输出 */
@@ -104,7 +107,7 @@ void print_statistics(void)
     printf("%-20s : %*u (%5.2f%%)\n", fun_calls[i].name, digits, fun_calls[i].num, ((double) fun_calls[i].num / total_num) * 100.0);
 
   /* 打印不同长度map的数量 */
-  printf("\nNumber of Map with Different Size:\n\n");
+  printf("\nNumber of map with different size:\n");
   total_num = 0;
   for (int16_t i = 1; i < ALPHABET_SIZE; i++)
     total_num += map_size[i].num_2;
@@ -116,7 +119,7 @@ void print_statistics(void)
       printf("%2u: %*u (%5.2f%%)\n", map_size[i].num_1, digits, num, percent);
   
   /* 打印不同长度数组的数量 */
-  printf("\nNumber of Array with Different Size:\n\n");
+  printf("\nNumber of array with different size:\n");
   total_num = 0;
     for (int32_t i = 1; i < NUM_TO_BUILD_HASH + 1; i++)
     total_num += array_size[i].num_2;
@@ -128,7 +131,7 @@ void print_statistics(void)
       printf("%2u: %*u (%5.2f%%)\n", array_size[i].num_1, digits, num, percent);
 
     /* 打印不同长度数组的数量 */
-  printf("\nNumber of Array with Different string length:\n\n");
+  printf("\nNumber of array with different string length:\n");
   total_num = 0;
   for (int32_t i = 1; i < MAX_PAT_LEN + 1; i++)
     total_num += array_len[i].num_2;

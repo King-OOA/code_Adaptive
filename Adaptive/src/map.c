@@ -149,10 +149,10 @@ static Tree_Node_T match_map_256(Map_256_T map_256, Char_T const **pos_p, bool *
 }
 
 /* 所有后缀的首字符相同 */
-void build_map_1(Tree_Node_T t)
+static Map_1_T build_map_1(Suf_Node_T suf_list)
 {
   Map_1_T map_1 = CALLOC(1, struct Map_1);
-  map_1->key = *((Suf_Node_T) t->link)->str;
+  map_1->key = *suf_list->str;
 
 #if DEBUG
   assert(map_1->key);
@@ -160,7 +160,7 @@ void build_map_1(Tree_Node_T t)
 
   struct Suf_Node **next_p = (struct Suf_Node **) &map_1->child.link;
  
-  for (Suf_Node_T cur_suf = t->link, next_suf; cur_suf; cur_suf = next_suf) {
+  for (Suf_Node_T cur_suf = suf_list, next_suf; cur_suf; cur_suf = next_suf) {
     next_suf = cur_suf->next;	/* 必须判断cur_suf非空时才能指向其下一个 */
 #if DEBUG
     assert(*cur_suf->str == map_1->key);
@@ -171,52 +171,51 @@ void build_map_1(Tree_Node_T t)
   }
 
   *next_p = NULL;
-
-  t->match_fun = (Match_Fun_T) match_map_1;
-  t->link = map_1;
-
   push_children(&map_1->child, 1);
+
+  return map_1;
 }
 
 #define BUILD_MAP_4_OR_16(n)						\
-									\
-static void build_map_##n(Tree_Node_T t, Pat_Num_T key_num)		\
-{									\
-  Map_##n##_T map_##n = CALLOC(1, struct Map_##n);			\
-  map_##n->key_num = key_num;						\
-									\
-  struct Suf_Node **next_p = (struct Suf_Node **) &map_##n->children[0].link; /* 初始化 */ \
-  Char_T cur_ch, pre_ch = 0;						\
-  int8_t i = -1; /* 索引初始值 */					\
-  /*具有相同首字符的后缀,连接在一起,形成段,每段对应keys中的一个字符*/	\
-  for (Suf_Node_T cur_suf = t->link, next_suf; cur_suf; cur_suf = next_suf) { \
-    next_suf = cur_suf->next;						\
-   /*判断是否是新一段的开始*/						\
-    if ((cur_ch = *cur_suf->str) != pre_ch) {				\
-      *next_p = NULL; map_##n->keys[++i] = cur_ch;  /* 当前链表截止 */	\
-      next_p = (struct Suf_Node **) &map_##n->children[i].link; /*新一段的链表头 */ \
-      pre_ch = cur_ch;							\
-    }									\
-    /* 将当前后缀插入到对应孩子节点中 */				\
-    if ((cur_suf = cut_head(cur_suf, 1))) {				\
-      *next_p = cur_suf; next_p = &cur_suf->next;			\
-    } else								\
-      set_bit(map_##n->pat_end_flag, i); /* 是模式尾 */			\
-  }									\
-									\
-  *next_p = NULL;							\
-  assert(key_num == i+1);						\
-  t->link = map_##n;							\
-  t->match_fun = (Match_Fun_T) match_map_##n;				\
   									\
-  push_children(map_##n->children, key_num);				\
-}
+  static Map_##n##_T build_map_##n(Suf_Node_T suf_list, Pat_Num_T key_num) \
+  {									\
+    Map_##n##_T map_##n = CALLOC(1, struct Map_##n);			\
+    map_##n->key_num = key_num;						\
+									\
+    struct Suf_Node **next_p = (struct Suf_Node **) &map_##n->children[0].link; /* 初始化 */ \
+    Char_T cur_ch, pre_ch = 0;						\
+    int8_t i = -1; /* 索引初始值 */					\
+    /*具有相同首字符的后缀,连接在一起,形成段,每段对应keys中的一个字符*/	\
+    for (Suf_Node_T cur_suf = suf_list, next_suf; cur_suf; cur_suf = next_suf) { \
+      next_suf = cur_suf->next;						\
+      assert(*cur_suf->str);						\
+      /*判断是否是新一段的开始*/					\
+      if ((cur_ch = *cur_suf->str) != pre_ch) {				\
+	*next_p = NULL; map_##n->keys[++i] = cur_ch;  /* 当前链表截止 */ \
+	next_p = (struct Suf_Node **) &map_##n->children[i].link; /*新一段的链表头 */ \
+	pre_ch = cur_ch;						\
+      }									\
+      /* 将当前后缀插入到对应孩子节点中 */				\
+      if ((cur_suf = cut_head(cur_suf, 1))) {				\
+	*next_p = cur_suf; next_p = &cur_suf->next;			\
+      } else								\
+	set_bit(map_##n->pat_end_flag, i); /* 是模式尾 */		\
+    }									\
+									\
+    *next_p = NULL;							\
+    assert(key_num == i+1);						\
+  									\
+    push_children(map_##n->children, key_num);				\
+									\
+    return map_##n;							\
+  }
 
 BUILD_MAP_4_OR_16(4)
 
 BUILD_MAP_4_OR_16(16)
 
-static void build_map_48(Tree_Node_T t, Pat_Num_T key_num)
+static Map_48_T build_map_48(Suf_Node_T suf_list, Pat_Num_T key_num)
 {
   Map_48_T map_48 = CALLOC(1, struct Map_48);
   memset(map_48->index, -1, 256);
@@ -225,7 +224,7 @@ static void build_map_48(Tree_Node_T t, Pat_Num_T key_num)
   UC_T cur_ch, pre_ch = 0;
   int8_t i = -1; /* 0 ~ 47 */
 
-  for (Suf_Node_T cur_suf = t->link, next_suf; cur_suf; cur_suf = next_suf) {
+  for (Suf_Node_T cur_suf = suf_list, next_suf; cur_suf; cur_suf = next_suf) {
     next_suf = cur_suf->next;
 #if DEBUG
     assert(*cur_suf->str);
@@ -252,20 +251,19 @@ static void build_map_48(Tree_Node_T t, Pat_Num_T key_num)
   assert(key_num == i+1);
 #endif 
 
-  t->link = map_48;
-  t->match_fun = (Match_Fun_T) match_map_48;
-
   push_children(map_48->children, key_num);
+
+  return map_48;
 }
 
-static void build_map_256(Tree_Node_T t)
+static Map_256_T build_map_256(Suf_Node_T suf_list)
 {
   Map_256_T map_256 = CALLOC(1, struct Map_256);
 
   struct Suf_Node **next_p = (struct Suf_Node **) &map_256->children[0].link; /* 初始化 */
   UC_T pre_ch = 0, cur_ch;
 
-  for (Suf_Node_T cur_suf = t->link, next_suf; cur_suf; cur_suf = next_suf) {
+  for (Suf_Node_T cur_suf = suf_list, next_suf; cur_suf; cur_suf = next_suf) {
     next_suf = cur_suf->next;
 #if DEBUG     
     assert(*cur_suf->str);
@@ -287,10 +285,9 @@ static void build_map_256(Tree_Node_T t)
 
   *next_p = NULL;
 
-  t->link = map_256;
-  t->match_fun = (Match_Fun_T) match_map_256;
-
   push_children(map_256->children, 256);
+
+  return map_256;
 }
 
 void build_map(Tree_Node_T t, Pat_Num_T key_num)
@@ -301,27 +298,32 @@ void build_map(Tree_Node_T t, Pat_Num_T key_num)
 #endif
 
   if (key_num == 1) {	/* 单个字符 */
-    build_map_1(t);
+    t->link = build_map_1(t->link);
+    t->match_fun = (Match_Fun_T) match_map_1;
 #if PROFILING
     type_num[MAP_1].num++;
 #endif
   } else if (key_num <= 4) {
-    build_map_4(t, key_num);
+    t->link = build_map_4(t->link, key_num);
+    t->match_fun = (Match_Fun_T) match_map_4;
 #if PROFILING
     type_num[MAP_4].num++;
 #endif
   } else if (key_num <= 16) {
-    build_map_16(t, key_num);
+    t->link = build_map_16(t->link, key_num);
+    t->match_fun = (Match_Fun_T) match_map_16;
 #if PROFILING
     type_num[MAP_16].num++;
 #endif
   } else if (key_num <= 48) {
-    build_map_48(t, key_num);
+    t->link = build_map_48(t->link, key_num);
+    t->match_fun = (Match_Fun_T) match_map_48;
 #if PROFILING
     type_num[MAP_48].num++;
 #endif
   } else {
-    build_map_256(t);
+    t->link = build_map_256(t->link);
+    t->match_fun = (Match_Fun_T) match_map_256;
 #if PROFILING
     type_num[MAP_256].num++;
 #endif
