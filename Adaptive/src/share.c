@@ -5,9 +5,9 @@
 #include <string.h>
 #include "share.h"
 #include "common.h"
-#include "queue.h"
+#include "stack.h"
 
-extern Queue_T queue;
+extern Stack_T stk;
 
 Suf_Node_T cut_head(Suf_Node_T suf_node, Pat_Len_T lss)
 {
@@ -23,7 +23,7 @@ Suf_Node_T cut_head(Suf_Node_T suf_node, Pat_Len_T lss)
   return suf_node;
 }
 
-extern inline bool same_str(Char_T const *s1, Char_T const *s2, Pat_Len_T len)
+inline bool same_str(Char_T const *s1, Char_T const *s2, Pat_Len_T len)
 {
   while (len && *s1 == *s2)
     len--, s1++, s2++;
@@ -31,11 +31,24 @@ extern inline bool same_str(Char_T const *s1, Char_T const *s2, Pat_Len_T len)
   return !len;
 }
 
+/* 1 <= block_size <= 4 */
+uint32_t block_123(UC_T const *p, int8_t block_size)
+{
+  uint32_t v = 0;
+  
+  while (block_size--) {
+    v <<= BITS_PER_BYTE;
+    v += *p++;
+  }
+
+  return v;
+}
+
 void push_children(Tree_Node_T child, Pat_Num_T num)
 {
   while (num--) {
     if (child->link)
-      Queue_push(queue, child);
+      Stack_push(stk, child);
     child++;
   }
 }

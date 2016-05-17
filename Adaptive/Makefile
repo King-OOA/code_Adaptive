@@ -1,49 +1,31 @@
-OBJS = main.o share.o hash.o map.o array.o statistics.o sorter.o
-LIBS = -ladt -lcommon -lm -lbinary 
+OBJS = share.o hash.o map.o array.o statistics.o sorter.o filter.o
+LIBS = -ladt -lcommon -lm -lbinary #-lmakedata
 
-#OBJS := $(patsubst %.c, %.o, $(wildcard ./src/*.c))
+#OBJS := $(patsubst ./src/%.c, %.o, $(wildcard ./src/*.c))
 CC = gcc
-
-#LIBPATH = ../libs/so
 
 INCLUDE_1 = ../libs/include
 INCLUDE_2 = ./include
 
 vpath %.h $(INCLUDE_1) $(INCLUDE_2)
 vpath %.c ./src
-#vpath lib%.a $(LIBPATH)
-#vpath lib%.so $(LIBPATH)
 
-CFLAGS = -Wall -c -std=c99 -O2 -I$(INCLUDE_1) -I$(INCLUDE_2)
+CFLAGS = -Wall -c -O3 -std=c99 -I$(INCLUDE_1) -I$(INCLUDE_2)
 
-a.test.out:  $(OBJS) $(LIBS)
+a.test.out: main.o $(OBJS) $(LIBS)
 	$(CC) $^ -o $@
 	rm *.o
 
-$(OBJS): share.h
+$(OBJS): share.h common.h binary.h statistics.h
 
-main.o: main.c hash.h common.h map.h binary.h sorter.h array.h
+$(OBJS): %.o: %.c %.h
 	$(CC) $(CFLAGS) $< -o $@
 
-share.o: share.c common.h
+main.o: main.c hash.h common.h map.h binary.h sorter.h array.h stack.h filter.h #makedata.h
 	$(CC) $(CFLAGS) $< -o $@
-
-hash.o: hash.c hash.h common.h
-	$(CC) $(CFLAGS) $< -o $@
-
-map.o: map.c map.h common.h
-	$(CC) $(CFLAGS) $< -o $@
-
-array.o: array.c array.h common.h
-	$(CC) $(CFLAGS) $< -o $@	
-
-statistics.o: statistics.c statistics.h
-	$(CC) $(CFLAGS) $< -o $@	
-
-sorter.o : sorter.c sorter.h
-	$(CC) $(CFLAGS) $<  -o $@
-
 
 .PHONY: ra
-ra :
+ra : ro
 	-rm a.test.out
+ro:
+	-rm $(OBJS)

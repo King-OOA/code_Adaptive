@@ -6,13 +6,11 @@
 #include <stdbool.h>
 #include "share.h"
 #include "common.h"
-#include "queue.h"
 #include <stdint.h>
 #include "array.h"
 #include "statistics.h"
 #include "binary.h"
 
-extern Queue_T *queue;
 extern Str_Num_T type_num[];
 extern Str_Num_T fun_calls[];
 extern Num_Num_T array_size[];
@@ -116,20 +114,13 @@ static Tree_Node_T array_binary_match(Str_Array_T str_array, Char_T const **pos_
   return NULL;
 }
 
-static uint16_t block_2(UC_T const *p)
-{
-  uint16_t u = *p;
-
-  return (u << BITS_PER_BYTE) + *(p + 1);
-}
-
 static Tree_Node_T match_map_65536(Map_65536_T map_65536, Char_T **pos_p, bool *pat_end_p)
 {
 #if PROFILING
   fun_calls[MATCH_MAP_65536].num++;
 #endif
    
-  uint16_t t_block = block_2(*pos_p);
+  uint16_t t_block = block_123(*pos_p, 2);
   Tree_Node_T child = map_65536->children + t_block;
 
   *pat_end_p = test_bit(map_65536->pat_end_flag, t_block);
@@ -154,25 +145,25 @@ static Single_Str_T make_single_str(Pat_Len_T str_len)
 /* 所有后缀前str_len个字符相同, sing_str肯定是模式终止节点 */
 static Single_Str_T build_single_str(Suf_Node_T suf_list, Pat_Len_T str_len)
 {
-  Single_Str_T single_str = make_single_str(str_len);
-  memcpy(single_str->str, suf_list->str, str_len);
+     Single_Str_T single_str = make_single_str(str_len);
+     memcpy(single_str->str, suf_list->str, str_len);
 
-  struct Suf_Node **next_p = (struct Suf_Node **) &single_str->child.link;
-  for (Suf_Node_T cur_suf = suf_list, next_suf; cur_suf; cur_suf = next_suf) {
-    next_suf = cur_suf->next;
+     struct Suf_Node **next_p = (struct Suf_Node **) &single_str->child.link;
+     for (Suf_Node_T cur_suf = suf_list, next_suf; cur_suf; cur_suf = next_suf) {
+	  next_suf = cur_suf->next;
 #if DEBUG
-    assert(same_str(cur_suf->str, single_str->str, str_len));
+	  assert(same_str(cur_suf->str, single_str->str, str_len));
 #endif 
-    if ((cur_suf = cut_head(cur_suf, str_len))) {
-      *next_p = cur_suf; next_p = &cur_suf->next;
-    }
-  }
+	  if ((cur_suf = cut_head(cur_suf, str_len))) {
+	       *next_p = cur_suf; next_p = &cur_suf->next;
+	  }
+     }
   
-  *next_p = NULL;
+     *next_p = NULL;
 
-  push_children(&single_str->child, 1);
+     push_children(&single_str->child, 1);
 
-  return single_str;
+     return single_str;
 }
 
 static Str_Array_T make_str_array(Pat_Num_T str_num, Pat_Len_T str_len)
@@ -238,7 +229,7 @@ static Map_65536_T build_map_65536(Suf_Node_T suf_list)
 
   for (Suf_Node_T cur_suf = suf_list, next_suf; cur_suf; cur_suf = next_suf) {
     next_suf = cur_suf->next;
-    if ((cur_block = block_2(cur_suf->str)) != pre_block) { /* 终止上一个链表,跳转到新链表头 */
+    if ((cur_block = block_123(cur_suf->str, 2)) != pre_block) { /* 终止上一个链表,跳转到新链表头 */
 #if DEBUG
       assert(cur_block > 0 && cur_block < 65536);
 #endif 

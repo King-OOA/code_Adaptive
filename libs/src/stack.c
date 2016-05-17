@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include "assert.h"
-#include "mem.h"
+#include "common.h"
+//#include "mem.h"
 #include "stack.h"
 
 #define T Stack_T
@@ -17,7 +18,8 @@ T Stack_new(void)
 {
   T stk;
 
-  NEW(stk);
+  //NEW(stk);
+  stk = MALLOC(1, struct T);
   stk->count = 0;
   stk->head = NULL;
 
@@ -35,7 +37,8 @@ void Stack_push(T stk, void *x)
   struct elem *t;
 
   assert(stk);
-  NEW(t);
+  t = MALLOC(1, struct elem);
+  //NEW(t);
   
   t->x = x;
   t->next = stk->head;
@@ -52,7 +55,8 @@ void *Stack_pop(T stk)
   stk->head = t->next;
   stk->count--;
   void *x = t->x;
-  FREE(t);
+  free(t);
+  // FREE(t);
   
   return x;
 }
@@ -63,8 +67,8 @@ void Stack_free(T *stk)
 
   for (struct elem *t = (*stk)->head, *u; t; t = u) {
     u = t->next;
-    FREE(t);
+    free(t);
   }
   
-  FREE(*stk);
+  free(*stk);
 }

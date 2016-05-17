@@ -5,14 +5,12 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
-#include "queue.h"
 #include "share.h"
 #include "binary.h"
 #include "common.h"
 #include "map.h"
 #include "statistics.h"
 
-extern Queue_T queue;
 extern Num_Num_T map_size[];
 extern Str_Num_T type_num[];
 extern Str_Num_T fun_calls[];

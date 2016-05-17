@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <limits.h>
 #include "binary.h"
 #include "common.h"
 
@@ -6,6 +9,7 @@
 #define SHIFT 3
 #define MASK 0x7
 
+static unsigned char one = 0x80u; /* 10000000 */
 
 /* 生成size位的bitmap */
 unsigned char *create_bitmap(size_t size)
@@ -15,22 +19,22 @@ unsigned char *create_bitmap(size_t size)
   return bitmap;
 }
 
-/* 将bitmap的第i位置(i从0开始)1 */
-void set_bit(unsigned char *bitmap, unsigned i)
+/* 将bitmap的第i位置1 (i从0开始)*/
+void set_bit(unsigned char *bitmap, uint64_t i)
 {
-  bitmap[i>>SHIFT] |= (1 << (i & MASK));
+  bitmap[i>>SHIFT] |= (one >> (i & MASK));
 }
 
 /* 将bitmap的第i位置0 */
-void clear_bit(unsigned char *bitmap, unsigned i)
+void clear_bit(unsigned char *bitmap, uint64_t i)
 {
-  bitmap[i>>SHIFT] &= ~(1 << (i & MASK));
+  bitmap[i>>SHIFT] &= ~(one >> (i & MASK));
 }
 
 /* 测试bitmap的第i位是否为1 */
-int test_bit(unsigned char const *bitmap, unsigned i)
+bool test_bit(unsigned char const *bitmap, uint64_t i)
 {
-  return bitmap[i>>SHIFT] & (1 << (i & MASK));
+  return bitmap[i>>SHIFT] & (one >> (i & MASK));
 }
 
 /* 一个对象的字节表示,start是该对象的起始地址,len为该对象的字节数 */
@@ -54,21 +58,20 @@ int logn(unsigned long n)
   return i;
 }
 
-
 /* 判断n是否是奇数 */
-int is_odd(long n)
+bool is_odd(long n)
 {
   return n & 0x1;
 }
 
 /* 判断n是否是偶数 */
-int is_even(long n)
+bool is_even(long n)
 {
   return !(n & 0x1);
 }
 
 /* 小端机器返回1, 大端返回0 */
-int is_little_endian(void)
+bool is_little_endian(void)
 {
     int x = 1;
     

@@ -8,12 +8,8 @@
 #include "common.h"
 #include "binary.h"
 #include "share.h"
-#include "hash.h"
-#include "queue.h"
 #include "statistics.h"
 
-
-extern Queue_T queue;
 extern Str_Num_T type_num[];
 extern Str_Num_T fun_calls[];
 
@@ -58,7 +54,7 @@ static Hash_Table_T make_hash_table(Pat_Num_T table_size, Pat_Len_T str_len)
 }
 
 /* 保存hash槽链表尾指针,用于维持槽链表有序 */
-static struct Suf_Node ***make_tails(Pat_Num_T table_size, Tree_Node_T child)
+struct Suf_Node ***make_tails(Pat_Num_T table_size, Tree_Node_T child)
 {
   struct Suf_Node ***tails = MALLOC(table_size, struct Suf_Node **), ***p = tails;
 
