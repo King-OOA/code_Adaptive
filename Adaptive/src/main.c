@@ -170,6 +170,7 @@ Filter_T build_AMT(Char_T *pats_file_name)
   Fclose(pats_fp);
   remove_duplicates(pat_list); /* 去掉模式集中重复的元素 */
   stk = Stack_new();
+
   Filter_T root = build_filter(pat_list); /* 根节点为过滤器 */
 
   while (!Stack_empty(stk)) /* 构建整个AMT */
@@ -236,7 +237,7 @@ void matching(Filter_T filter, Char_T *text_buf, size_t text_len, bool output)
   Pat_Len_T last_pos = window_size - block_size;
   static Bitmap_T mb = -1; /* 全"1" */
   Bitmap_T *bitmap = filter->bitmap;
-  uint64_t total_skip = 0;
+  uint64_t hit_num = 0;
 
   Char_T *entrance = text_buf;
   while (entrance <= text_buf + text_len - window_size) {
@@ -244,6 +245,7 @@ void matching(Filter_T filter, Char_T *text_buf, size_t text_len, bool output)
     mb &= bitmap[v];
 
     if (test_bit(&mb, last_pos)) {
+      hit_num++;
       bool find_pat = check_entrance(filter->children + v, entrance, matched_pat_buf, output);
 #if PROFILING
       if (find_pat && output)
@@ -257,15 +259,14 @@ void matching(Filter_T filter, Char_T *text_buf, size_t text_len, bool output)
       skip++;
       set_bit(&mb, 0); /* 首位置1 */
     } while (!test_bit(&mb, last_pos)); /* 末位不是1 */
-    total_skip += skip;
 
     entrance += skip;
   }
 
   clock_t end = clock();
   
-  fprintf(stderr, "\nDone! (%f) total skip: %lu\n",
-	  (double) (end - start) / CLOCKS_PER_SEC, total_skip);
+  fprintf(stderr, "\nDone! (%f) total skip: %.2f\n",
+	  (double) (end - start) / CLOCKS_PER_SEC, (double) (text_len - hit_num) / text_len);
 }
 
 int main(int argc, char **argv)
