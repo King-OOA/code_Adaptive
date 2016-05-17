@@ -16,7 +16,7 @@ vpath %.c ./src
 
 CFLAGS = -Wall -c -std=c99 -O2 -I$(INCLUDE_1) -I$(INCLUDE_2)
 
-a.test.out:  $(OBJS) $(LIBS)
+a.out:  $(OBJS) $(LIBS)
 	$(CC) $^ -o $@
 	rm *.o
 
