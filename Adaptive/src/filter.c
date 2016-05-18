@@ -31,7 +31,7 @@ Filter_T build_filter(Suf_Node_T pat_list)
      Filter_T filter = filter_new(block_size, lss);
      uint32_t n = pow_256[block_size];
 
-     struct Suf_Node ***tails = make_tails(n, filter_table->children);
+     struct Suf_Node ***tails = make_tails(n, filter->children);
 
      for (Suf_Node_T cur_suf = pat_list, next_suf; cur_suf; cur_suf = next_suf) {
 	  next_suf = cur_suf->next;
