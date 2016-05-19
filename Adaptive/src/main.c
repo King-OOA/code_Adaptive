@@ -85,9 +85,6 @@ static void remove_duplicates(Suf_Node_T pat_list)
 	  if ((result = strcmp(prev->str, cur->str)) == 0) { /* 模式串不等长,均以'\0'结尾*/
 	       cur = cur->next; free(prev->next); prev->next = cur; n++;
 	  } else {
-/* #if PROFILING */
-/* 	       assert(result < 0); */
-/* #endif  */
 	       prev = cur; cur = cur->next;
 	  }
 

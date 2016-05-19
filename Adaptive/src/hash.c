@@ -19,12 +19,12 @@ typedef struct Hash_Table {
   struct Tree_Node children[];
 } *Hash_Table_T;
 
-static inline Hash_Value_T hash(Char_T const *s, Pat_Len_T str_len, Pat_Num_T table_size)
+static inline Hash_Value_T hash(UC_T const *s, Pat_Len_T str_len, Pat_Num_T table_size)
 {
   Hash_Value_T value = SEED;
 
   while (str_len--)
-    value ^= (value << L_BITS) + (value >> R_BITS) + *((UC_T const *) s++);
+    value ^= (value << L_BITS) + (value >> R_BITS) + *s++;
 
   return value % table_size;
 }
