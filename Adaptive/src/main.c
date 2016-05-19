@@ -75,14 +75,23 @@ static Suf_Node_T read_pats(FILE *pats_fp)
 /* 有序链表去重,头节点一定会保留 */
 static void remove_duplicates(Suf_Node_T pat_list)
 {
-  Suf_Node_T prev = pat_list, cur = prev->next;
+     Suf_Node_T prev = pat_list, cur = prev->next;
+     uint32_t n = 0;
+     int8_t result;
 
-  while (cur)
-    if (strcmp(prev->str, cur->str) == 0) { /* 模式串不等长,均以'\0'结尾*/
-      cur = cur->next; free(prev->next); prev->next = cur;
-    } else {
-      prev = cur; cur = cur->next;
-    }
+     printf("Removing duplicates...\n");
+
+     while (cur)
+	  if ((result = strcmp(prev->str, cur->str)) == 0) { /* 模式串不等长,均以'\0'结尾*/
+	       cur = cur->next; free(prev->next); prev->next = cur; n++;
+	  } else {
+/* #if PROFILING */
+/* 	       assert(result < 0); */
+/* #endif  */
+	       prev = cur; cur = cur->next;
+	  }
+
+     printf("%u duplicates haven been removed!\n", n);
 }
 
 Pat_Len_T get_lss(Suf_Node_T suf_list)
