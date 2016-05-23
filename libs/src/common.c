@@ -5,6 +5,7 @@
 #include <sys/time.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <assert.h>
 #include "common.h"
 //#include "share.h"
 
@@ -169,7 +170,20 @@ char *load_file(const char *file_name, size_t *file_size_p)
 
   file_size = get_file_size(fp);
   buf = MALLOC(file_size + 1, char);
-  fread(buf, file_size, 1, fp);
+
+  if (fread(buf, file_size, 1, fp) != 1) {
+    if (feof(fp)) {
+      fprintf(stderr, "End of file: %s\n", file_name);
+      Fclose(fp);
+      exit(EXIT_FAILURE);
+    }
+    if (feof(fp)) {
+      fprintf(stderr, "Error! while loading file: %s\n", file_name);
+      Fclose(fp);
+      exit(EXIT_FAILURE);
+    }
+  }
+
   buf[file_size] = '\0';
  
   *file_size_p = file_size;

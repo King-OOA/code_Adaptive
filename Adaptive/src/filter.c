@@ -13,10 +13,12 @@ static Filter_T filter_new(int8_t block_size, Pat_Len_T lss)
 {
      uint32_t n = pow_256[block_size];
      Filter_T new_filter = VMALLOC(struct filter, Bitmap_T, n);
-     new_filter->children = CALLOC(n, struct Tree_Node);
-     memset(new_filter->bitmap, 0, n * sizeof(Bitmap_T));
+
      new_filter->block_size = block_size;
      new_filter->window_size = lss;
+
+     new_filter->children = CALLOC(n, struct Tree_Node);
+     memset(new_filter->bitmap, 0, n * sizeof(Bitmap_T));
 
      return new_filter;
 }
@@ -26,8 +28,7 @@ extern struct Suf_Node ***make_tails(Pat_Num_T table_size, Tree_Node_T child);
 
 Filter_T build_filter(Suf_Node_T pat_list)
 {
-     Pat_Len_T lss = get_lss(pat_list);
-     printf("LSP: %d\n", lss);
+     Pat_Len_T lss = get_lss(pat_list); printf("LSP: %d\n", lss);
      int8_t block_size = (lss == 1) ? 1 : 2;
      Filter_T filter = filter_new(block_size, lss);
      uint32_t n = pow_256[block_size];

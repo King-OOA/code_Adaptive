@@ -56,18 +56,22 @@ static Suf_Node_T read_pats(FILE *pats_fp)
 {
   Char_T buf[MAX_PAT_LEN+1]; /*模式串缓存,包括换行符*/
   Pat_Len_T pat_len;
+  Pat_Num_T pat_num = 0;
   Char_T *line_break = NULL; /*换行符指针*/
   Suf_Node_T list_head = NULL, new_suf_node = NULL; /* 链表头指针 */
 
+  printf("\nReading Patterns...\n");
   while (fgets(buf, sizeof(buf), pats_fp)) {
     if ((line_break = strchr(buf, '\n')))
       *line_break = '\0';
     if ((pat_len = strlen(buf))) { /* 必须是非空模式串 */
+      pat_num++;
       new_suf_node = make_suffix_node(buf, pat_len+1); /* buf末尾包含'\0' */
       new_suf_node->next = list_head; /* 挂到链表头 */
       list_head = new_suf_node; /* 新连表头 */
     }
   }
+  printf("%u patterns readed!\n", pat_num);
 
   return list_head;
 }
@@ -79,7 +83,7 @@ static void remove_duplicates(Suf_Node_T pat_list)
      uint32_t n = 0;
      int8_t result;
 
-     printf("Removing duplicates...\n");
+     printf("\nRemoving duplicates...\n");
 
      while (cur)
 	  if ((result = strcmp(prev->str, cur->str)) == 0) { /* 模式串不等长,均以'\0'结尾*/
@@ -88,7 +92,7 @@ static void remove_duplicates(Suf_Node_T pat_list)
 	       prev = cur; cur = cur->next;
 	  }
 
-     printf("%u duplicates haven been removed!\n", n);
+     printf("%u patterns removed!\n", n);
 }
 
 Pat_Len_T get_lss(Suf_Node_T suf_list)
@@ -169,13 +173,14 @@ static void build_tree_node(Tree_Node_T t)
 Filter_T build_AMT(Char_T *pats_file_name)
 {
   FILE *pats_fp = Fopen(pats_file_name, "rb");
-  fprintf(stderr, "\nBuilding AMT...\n"); fflush(stdout);
 
   clock_t start = clock();
   Suf_Node_T pat_list = list_radix_sort(read_pats(pats_fp)); /* 读取模式集,并按模式串字典序排序 */
   Fclose(pats_fp);
   remove_duplicates(pat_list); /* 去掉模式集中重复的元素 */
   stk = Stack_new();
+
+  fprintf(stderr, "\nBuilding AMT...\n"); fflush(stdout);
 
   Filter_T root = build_filter(pat_list); /* 根节点为过滤器 */
 
@@ -234,7 +239,7 @@ static bool check_entrance(Tree_Node_T t, Char_T const *entrance, Char_T *matche
 /* 匹配文本*/
 void matching(Filter_T filter, Char_T *text_buf, size_t text_len, bool output)
 {
-  fprintf(stderr, "\nMatching..."); fflush(stdout);
+  fprintf(stderr, "\nMatching...\n"); fflush(stdout);
   Char_T matched_pat_buf[500];
   clock_t start = clock();
 
@@ -297,6 +302,7 @@ int main(int argc, char **argv)
   fprintf(stderr, "\nLoading text...\n"); fflush(stdout);
   size_t file_size;
   Char_T *text_buf = load_file(argv[2], &file_size); /* argv[2]是文本文件名 */
+  printf("%lu bytes loaded!\n", file_size);
 
   /* 匹配文本 */
   matching(root, text_buf, file_size, output);
