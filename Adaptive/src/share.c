@@ -31,6 +31,17 @@ extern inline bool same_str(Char_T const *s1, Char_T const *s2, Pat_Len_T len)
   return !len;
 }
 
+int8_t str_cmp(UC_T const *s1, UC_T const *s2, Pat_Len_T len)
+{
+  while (len && *s1 == *s2)
+    len--, s1++, s2++;
+
+  if (len)
+    return (*s1 < *s2) ? -1 : 1;
+  else
+    return 0;
+}
+
 void push_children(Tree_Node_T child, Pat_Num_T num)
 {
   while (num--) {

@@ -69,7 +69,7 @@ static Tree_Node_T array_ordered_match(Str_Array_T str_array, Char_T const **pos
     str_array->pat_end_flag :
     (Flag_T *) &str_array->pat_end_flag;
 
-  while (str_num && (result = memcmp(str_buf, t_str, str_len)) < 0)
+  while (str_num && (result = str_cmp(str_buf, t_str, str_len)) < 0)
     str_num--, str_buf += str_len;
 
   if (str_num == 0 || result > 0) 	/* 没找到 */
@@ -100,7 +100,7 @@ static Tree_Node_T array_binary_match(Str_Array_T str_array, Char_T const **pos_
 
   while (low <= high) {
     int32_t mid = (low + high) >> 1;
-    int8_t result = memcmp(t_str, str_buf + mid * str_len, str_len);
+    int8_t result = str_cmp(t_str, str_buf + mid * str_len, str_len);
     
     if (result < 0)
       high = mid - 1;

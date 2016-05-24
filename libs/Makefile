@@ -6,7 +6,7 @@ LINKA = ar -rc
 LINK = $(LINKSO)
 
 INCLUDE = ./include
-CFLAGS = -O2 -Wall -c -std=c99 -fPIC -I$(INCLUDE)
+CFLAGS = -O3 -Wall -c -std=c99 -fPIC -I$(INCLUDE)
 
 #APATH = ./a
 #SOPATH = ./so

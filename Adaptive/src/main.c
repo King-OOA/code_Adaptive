@@ -196,7 +196,7 @@ static bool check_entrance(Tree_Node_T t, Char_T const *entrance, Char_T *matche
 /* 匹配文本*/
 void matching(Tree_Node_T root, Char_T *text_buf, size_t text_len, bool output)
 {
-  fprintf(stderr, "\nMatching..."); fflush(stdout);
+  fprintf(stderr, "\nMatching...\n"); fflush(stdout);
   Char_T matched_pat_buf[500];
   
   clock_t start = clock();
@@ -219,6 +219,13 @@ int main(int argc, char **argv)
 {
   bool output = false, show_sta_info = false;
   Char_T opt;
+  
+  /* char *s1 = "cff\nb"; */
+  /* char *s2 = "cdefg"; */
+
+  /* printf("%d\n", memcmp(s1, s2, 5)); */
+  /* exit(EXIT_FAILURE); */
+  
   
 /* 处理命令行参数 */
   if (argc > 3) 		/* 解析随后的参数 */

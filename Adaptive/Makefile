@@ -14,7 +14,7 @@ vpath %.c ./src
 #vpath lib%.a $(LIBPATH)
 #vpath lib%.so $(LIBPATH)
 
-CFLAGS = -Wall -c -std=c99 -O2 -I$(INCLUDE_1) -I$(INCLUDE_2)
+CFLAGS = -Wall -c -std=c99 -O3 -I$(INCLUDE_1) -I$(INCLUDE_2)
 
 a:  $(OBJS) $(LIBS)
 	$(CC) $^ -o $@

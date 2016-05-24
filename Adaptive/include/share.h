@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 
 /* 基本类型定义 */
 typedef unsigned char UC_T;
@@ -44,7 +45,7 @@ typedef unsigned Hash_Value_T;
 #define BITS_PER_BYTE 8
 
 /* 运行版本 */
-#define PROFILING 0  /* 为1时,加入各类统计信息,用于分析程序;否则,仅输出匹配时间,用于最终性能测试*/
+#define PROFILING 1  /* 为1时,加入各类统计信息,用于分析程序;否则,仅输出匹配时间,用于最终性能测试*/
 #define DEBUG 0 /* 出Bug时用,一般不用 */
 
 /* hash_Table 参数 */
@@ -78,7 +79,8 @@ struct Tree_Node {
 };
 
 Suf_Node_T cut_head(Suf_Node_T suf_node, Pat_Len_T lsp);
-extern inline bool same_str(Char_T const *s1, Char_T const *s2, Pat_Len_T len);
+inline bool same_str(Char_T const *s1, Char_T const *s2, Pat_Len_T len);
+int8_t str_cmp(UC_T const *s1, UC_T const *s2, Pat_Len_T len);
 void push_children(Tree_Node_T child, Pat_Num_T num);
 void print_str(Char_T const *s, Pat_Len_T len, Char_T terminator);
 
