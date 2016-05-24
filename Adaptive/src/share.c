@@ -24,7 +24,7 @@ Suf_Node_T cut_head(Suf_Node_T suf_node, Pat_Len_T lss)
 }
 
 /* 相等比较 */
-inline bool same_str(Char_T const *s1, Char_T const *s2, Pat_Len_T len)
+inline bool same_str(UC_T const *s1, UC_T const *s2, Pat_Len_T len)
 {
   while (len && *s1 == *s2)
     len--, s1++, s2++;

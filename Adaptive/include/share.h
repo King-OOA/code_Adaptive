@@ -80,7 +80,7 @@ struct Tree_Node {
 };
 
 Suf_Node_T cut_head(Suf_Node_T suf_node, Pat_Len_T lsp);
-extern inline bool same_str(Char_T const *s1, Char_T const *s2, Pat_Len_T len);
+extern inline bool same_str(UC_T const *s1, UC_T const *s2, Pat_Len_T len);
 void push_children(Tree_Node_T child, Pat_Num_T num);
 void print_str(Char_T const *s, Pat_Len_T len, Char_T terminator);
 uint32_t block_123(UC_T const *p, int8_t k);
