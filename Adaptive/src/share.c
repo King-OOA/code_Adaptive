@@ -24,12 +24,23 @@ Suf_Node_T cut_head(Suf_Node_T suf_node, Pat_Len_T lss)
 }
 
 /* 相等比较 */
-inline bool same_str(UC_T const *s1, UC_T const *s2, Pat_Len_T len)
+extern inline bool same_str(UC_T const *s1, UC_T const *s2, Pat_Len_T len)
 {
   while (len && *s1 == *s2)
     len--, s1++, s2++;
   
   return !len;
+}
+
+extern int8_t str_cmp(UC_T const *s1, UC_T const *s2, Pat_Len_T len)
+{
+  while (len && *s1 == *s2)
+    len--, s1++, s2++;
+
+  if (len)
+    return (*s1 < *s2) ? -1 : 1;
+  else
+    return 0;
 }
 
 /* 1 <= block_size <= 4 */
