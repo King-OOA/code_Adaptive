@@ -32,7 +32,8 @@ Filter_T build_filter(Suf_Node_T pat_list)
      int8_t block_size = (lss == 1) ? 1 : 2;
      Filter_T filter = filter_new(block_size, lss);
      uint32_t n = pow_256[block_size];
-
+     
+     printf("\nBuilding filter...\n");
      struct Suf_Node ***tails = make_tails(n, filter->children);
 
      for (Suf_Node_T cur_suf = pat_list, next_suf; cur_suf; cur_suf = next_suf) {
@@ -48,6 +49,13 @@ Filter_T build_filter(Suf_Node_T pat_list)
      
      free(tails);
      push_children(filter->children, n);
+     
+     /* 末尾为1的bitmap的比例 */
+     uint32_t num_of_1 = 0;
+     for (uint32_t i = 0; i < n; i++)
+       if (test_bit(filter->bitmap + i, lss - block_size))
+	   num_of_1++;
+     printf("Occupied: %.2f\n", (double) num_of_1 / n);
 
      return filter;
 }

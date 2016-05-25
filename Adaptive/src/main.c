@@ -180,10 +180,10 @@ Filter_T build_AMT(Char_T *pats_file_name)
   remove_duplicates(pat_list); /* 去掉模式集中重复的元素 */
   stk = Stack_new();
 
-  fprintf(stderr, "\nBuilding AMT...\n"); fflush(stdout);
 
   Filter_T root = build_filter(pat_list); /* 根节点为过滤器 */
 
+  fprintf(stderr, "\nBuilding AMT...\n"); fflush(stdout);
   while (!Stack_empty(stk)) /* 构建整个AMT */
      build_tree_node(Stack_pop(stk));
   clock_t end = clock();
