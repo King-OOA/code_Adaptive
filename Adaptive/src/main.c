@@ -284,7 +284,14 @@ int main(int argc, char **argv)
 {
   bool output = false, show_sta_info = false;
   Char_T opt;
-  
+ 
+
+  /* FILE *fp = fopen("/home/pz/data/all_a", "w"); */
+  /* for (uint32_t i = 0; i < 100000000; i++) */
+  /*   putc('a', fp); */
+  /* Fclose(fp); */
+  /* exit(EXIT_FAILURE); */
+ 
 /* 处理命令行参数 */
   if (argc > 3) 		/* 解析随后的参数 */
     for (char **arg = argv + 3; *arg && **arg == '-'; arg++)
