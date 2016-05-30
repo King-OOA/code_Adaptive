@@ -12,7 +12,7 @@ vpath %.c ./src
 
 CFLAGS = -Wall -c -O3 -std=c99 -I$(INCLUDE_1) -I$(INCLUDE_2)
 
-c: main.o $(OBJS) $(LIBS)
+d: main.o $(OBJS) $(LIBS)
 	$(CC) $^ -o $@
 	rm *.o
 

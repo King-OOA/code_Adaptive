@@ -13,13 +13,13 @@ uint32_t total_nodes;
 
 Str_Num_T type_num[] =
   {{"", 0}, {"Map 1", 0}, {"Map 4", 0}, {"Map 16", 0}, {"Map 48", 0},
-   {"Map 256", 0}, {"Single String", 0}, {"Array", 0},{"Map 65536", 0}, {"Hash", 0}};
+   {"Map 256", 0}, {"Single String", 0}, {"Array", 0},{"Map 65536", 0}, {"Hash", 0}, {"Merged String", 0}};
 
 Str_Num_T fun_calls[] = {
   {"Map 1 match", 0}, {"Map 4 match", 0},
   {"Map 16 match", 0}, {"Map 48 match", 0}, {"Map 256 match", 0},
   {"Single string match", 0}, {"Array ordered match", 0},
-  {"Array binary match", 0}, {"Map 65536 match", 0}, {"Hash match", 0}};
+  {"Array binary match", 0}, {"Map 65536 match", 0}, {"Hash match", 0}, {"Merged string match", 0}};
 
 Num_Num_T map_size[ALPHABET_SIZE];
 Num_Num_T array_size[NUM_TO_BUILD_HASH+1]; /* 0元素不用 */

@@ -14,7 +14,7 @@ typedef uint32_t Hash_Value_T;
 typedef uint32_t Bitmap_T;
 
 /* 结构类型 */
-#define TYPE_NUM    10
+#define TYPE_NUM    11
 #define END         0
 #define MAP_1       1
 #define MAP_4       2
@@ -25,8 +25,10 @@ typedef uint32_t Bitmap_T;
 #define ARRAY       7
 #define MAP_65536   8
 #define HASH        9
+#define MERGED_STR  10
+
 /* 匹配函数类型 */
-#define MATCH_FUN_NUM       10
+#define MATCH_FUN_NUM       11
 #define MATCH_MAP_1         0
 #define MATCH_MAP_4         1
 #define MATCH_MAP_16        2
@@ -37,6 +39,7 @@ typedef uint32_t Bitmap_T;
 #define MATCH_BINARY_ARRAY  7
 #define MATCH_MAP_65536     8
 #define MATCH_HASH          9
+#define MATCH_MERGED_STR    10
 
 #define MAX_PAT_LEN 100
 #define ALPHABET_SIZE 256
@@ -66,24 +69,36 @@ typedef uint32_t Bitmap_T;
 
 
 struct Suf_Node {
-  struct Suf_Node *next;
-  Char_T str[];
+     struct Suf_Node *next;
+     Char_T str[];
 };
+
+struct Output_Buf {
+     Char_T buf[5000];	/* 存放匹配成功的模式串 */
+     Char_T *cur_pos;	/* buf中当前位置 */
+} *output_buf;
+
 
 typedef struct Tree_Node *Tree_Node_T;
 typedef struct Suf_Node *Suf_Node_T;
-typedef Tree_Node_T (*Match_Fun_T) (void *, Char_T const **, bool *);
+typedef Tree_Node_T (*Match_Fun_T) (Tree_Node_T, Char_T const *, Char_T const **);
+
+bool output; /* 是否输出结果 */
+
 
 struct Tree_Node {
-  Match_Fun_T match_fun;
-  void *link;
+     Match_Fun_T match_fun;
+     void *link;
 };
 
 Suf_Node_T cut_head(Suf_Node_T suf_node, Pat_Len_T lsp);
-extern inline bool same_str(UC_T const *s1, UC_T const *s2, Pat_Len_T len);
+extern inline bool same_str(Char_T const *s1, Char_T const *s2, Pat_Len_T len);
 extern int8_t str_cmp(UC_T const *s1, UC_T const *s2, Pat_Len_T len);
 void push_children(Tree_Node_T child, Pat_Num_T num);
 void print_str(Char_T const *s, Pat_Len_T len, Char_T terminator);
 uint32_t block_123(UC_T const *p, int8_t k);
+void copy_to_output(Char_T const *begin, Char_T const *end);
+
+
 
 void print_suffix(Suf_Node_T cur_suf);

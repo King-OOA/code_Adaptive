@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "share.h"
 #include "common.h"
+#include "share.h"
 #include "stack.h"
 
 extern Stack_T stk;
@@ -24,7 +24,7 @@ Suf_Node_T cut_head(Suf_Node_T suf_node, Pat_Len_T lss)
 }
 
 /* 相等比较 */
-extern inline bool same_str(UC_T const *s1, UC_T const *s2, Pat_Len_T len)
+extern inline bool same_str(Char_T const *s1, Char_T const *s2, Pat_Len_T len)
 {
   while (len && *s1 == *s2)
     len--, s1++, s2++;
@@ -63,6 +63,14 @@ void push_children(Tree_Node_T child, Pat_Num_T num)
       Stack_push(stk, child);
     child++;
   }
+}
+
+void copy_to_output(Char_T const *begin, Char_T const *end)
+{
+     Pat_Len_T pat_len = end - begin;
+     memcpy(output_buf->cur_pos, begin, pat_len);
+     output_buf->cur_pos += pat_len;
+     *output_buf->cur_pos++ = ' ';
 }
 
 #if DEBUG
