@@ -266,7 +266,7 @@ int main(int argc, char **argv)
 {
      bool show_sta_info = false;
      Char_T opt;
-  
+       
 /* 处理命令行参数 */
      if (argc > 3) 		/* 解析随后的参数 */
 	  for (char **arg = argv + 3; *arg && **arg == '-'; arg++)
