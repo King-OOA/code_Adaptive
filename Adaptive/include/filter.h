@@ -7,7 +7,7 @@ typedef struct filter {
      Tree_Node_T children;
      int8_t block_size;
      int8_t window_size;
-     Bitmap_T bitmap[];
+     Bitmap_T bitmap[]; /* 按行存储 */
 } *Filter_T;
 
 Filter_T build_filter(Suf_Node_T pat_list);
