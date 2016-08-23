@@ -47,7 +47,7 @@ typedef uint32_t Bitmap_T;
 
 /* 运行版本 */
 #define PROFILING 1  /* 为1时,加入各类统计信息,用于分析程序;否则,仅输出匹配时间,用于最终性能测试*/
-#define DEBUG 1 /* 出Bug时用,一般不用 */
+#define DEBUG 0 /* 出Bug时用,一般不用 */
 
 /* hash_Table 参数 */
 #define L_BITS 6

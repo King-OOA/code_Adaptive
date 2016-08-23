@@ -1,5 +1,5 @@
 OBJS = share.o hash.o map.o array.o statistics.o sorter.o filter.o
-LIBS = -ladt -lcommon -lm -lbinary #-lmakedata
+LIBS = -ladt -lcommon -lm -lbits #-lmakedata
 
 #OBJS := $(patsubst ./src/%.c, %.o, $(wildcard ./src/*.c))
 CC = gcc

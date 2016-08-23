@@ -276,8 +276,8 @@ void matching(Filter_T filter, Char_T *text_buf, size_t text_len, bool output)
 
   clock_t end = clock();
   
-  fprintf(stderr, "\nDone! (%f) total skip: %.2f\n",
-	  (double) (end - start) / CLOCKS_PER_SEC, (double) (text_len - hit_num) / text_len);
+  fprintf(stderr, "\nDone! (%f) total skip: %lu (%.2f%%)\n",
+	  (double) (end - start) / CLOCKS_PER_SEC, (text_len - hit_num), (double) (text_len - hit_num) / text_len);
 }
 
 int main(int argc, char **argv)
