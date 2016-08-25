@@ -4,15 +4,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include "share.h"
-#include "common.h"
-#include "queue.h"
 #include <stdint.h>
+
+#include "common.h"
+#include "mem.h"
+#include "adt.h"
+#include "bits.h"
+
+
 #include "array.h"
 #include "statistics.h"
-#include "binary.h"
+#include "share.h"
 
-extern Queue_T *queue;
+
 extern Str_Num_T type_num[];
 extern Str_Num_T fun_calls[];
 extern Num_Num_T array_size[];
@@ -142,13 +146,14 @@ static Tree_Node_T match_map_65536(Map_65536_T map_65536, Char_T **pos_p, bool *
 
 static Single_Str_T make_single_str(Pat_Len_T str_len)
 {
-     Single_Str_T new_single_str = VMALLOC(struct Single_Str, Char_T, str_len);
+  Single_Str_T new_single_str;
+  VNEW(new_single_str, str_len, Char_T);
 
-     new_single_str->str_len = str_len;
-     new_single_str->child.match_fun = NULL;
-     new_single_str->child.link = NULL;
+  new_single_str->str_len = str_len;
+  new_single_str->child.match_fun = NULL;
+  new_single_str->child.link = NULL;
 
-     return new_single_str;
+  return new_single_str;
 }
 
 /* 所有后缀前str_len个字符相同, sing_str肯定是模式终止节点 */
@@ -177,7 +182,8 @@ static Single_Str_T build_single_str(Suf_Node_T suf_list, Pat_Len_T str_len)
 
 static Str_Array_T make_str_array(Pat_Num_T str_num, Pat_Len_T str_len)
 {
-  Str_Array_T new_array = VMALLOC(struct Str_Array, Char_T, str_len * str_num);
+  Str_Array_T new_array;
+  VNEW(new_array, str_len * str_num, Char_T);
 
   new_array->str_num = str_num;
   new_array->str_len = str_len;
@@ -231,7 +237,8 @@ static Str_Array_T build_str_array(Suf_Node_T suf_list, Pat_Num_T str_num, Pat_L
 
 static Map_65536_T build_map_65536(Suf_Node_T suf_list)
 {
-  Map_65536_T map_65536 = CALLOC(1, struct Map_65536);
+  Map_65536_T map_65536;
+  NEW0(map_65536);
 
   struct Suf_Node **next_p = (struct Suf_Node **) &map_65536->children[0].link; /* 初始化 */
   uint16_t pre_block = 0, cur_block;
@@ -290,4 +297,3 @@ void build_array(Tree_Node_T t, Pat_Num_T str_num, Pat_Len_T str_len)
 #endif
      }
 }
-

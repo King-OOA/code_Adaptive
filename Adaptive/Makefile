@@ -1,5 +1,5 @@
 OBJS = main.o share.o hash.o map.o array.o statistics.o sorter.o
-LIBS = -ladt -lcommon -lm -lbinary 
+LIBS = -ladt -lbits -lcommon -lmem -lpatset -lm
 
 #OBJS := $(patsubst %.c, %.o, $(wildcard ./src/*.c))
 CC = gcc
@@ -16,13 +16,13 @@ vpath %.c ./src
 
 CFLAGS = -Wall -c -std=c99 -O3 -I$(INCLUDE_1) -I$(INCLUDE_2)
 
-a:  $(OBJS) $(LIBS)
+ad_master:  $(OBJS) $(LIBS)
 	$(CC) $^ -o $@
 	rm *.o
 
-$(OBJS): share.h
+$(OBJS): share.h mem.h
 
-main.o: main.c hash.h common.h map.h binary.h sorter.h array.h
+main.o: main.c hash.h common.h map.h bits.h sorter.h array.h
 	$(CC) $(CFLAGS) $< -o $@
 
 share.o: share.c common.h
