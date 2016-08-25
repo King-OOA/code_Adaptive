@@ -2,12 +2,11 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "patset.h"
 
 /* 基本类型定义 */
 typedef unsigned char UC_T;
 typedef char Char_T;
-typedef int8_t Pat_Len_T;
-typedef unsigned Pat_Num_T;
 typedef UC_T Type_T;
 typedef UC_T Flag_T;
 typedef uint32_t Hash_Value_T;

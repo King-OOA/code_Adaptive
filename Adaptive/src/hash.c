@@ -5,87 +5,93 @@
 #include <limits.h>
 #include <stdint.h>
 #include <math.h>
+
 #include "common.h"
-#include "binary.h"
+#include "mem.h"
+#include "bits.h"
 #include "share.h"
+
+#include "hash.h"
 #include "statistics.h"
+
 
 extern Str_Num_T type_num[];
 extern Str_Num_T fun_calls[];
 
 typedef struct Hash_Table {
-  Pat_Num_T table_size;
-  Pat_Len_T key_len;
-  struct Tree_Node children[];
+    Pat_Num_T table_size;
+    Pat_Len_T key_len;
+    struct Tree_Node children[];
 } *Hash_Table_T;
 
 static inline Hash_Value_T hash(UC_T const *s, Pat_Len_T str_len, Pat_Num_T table_size)
 {
-  Hash_Value_T value = SEED;
+    Hash_Value_T value = SEED;
 
   while (str_len--)
     value ^= (value << L_BITS) + (value >> R_BITS) + *s++;
 
-  return value % table_size;
+    return value % table_size;
 }
 
 /* Hash表只能过滤一定不匹配的串,可能匹配的串需要由对应expand node的下一级来进一步判断 */
 Tree_Node_T match_hash(Hash_Table_T hash_table, Char_T const **pos_p, bool *pat_end_p)
 {
 #if PROFILING
-  fun_calls[MATCH_HASH].num++;
+    fun_calls[MATCH_HASH].num++;
 #endif 
 
-  Tree_Node_T child = hash_table->children
-    + hash(*pos_p, hash_table->key_len, hash_table->table_size);
+    Tree_Node_T child = hash_table->children
+	+ hash(*pos_p, hash_table->key_len, hash_table->table_size);
   
-  return child->link == NULL ? NULL : child;
+    return child->link == NULL ? NULL : child;
 }
 
 static Hash_Table_T make_hash_table(Pat_Num_T table_size, Pat_Len_T str_len)
 {
-     Hash_Table_T new_hash_table = VMALLOC(struct Hash_Table, struct Tree_Node, table_size);
+    Hash_Table_T new_hash_table;
+    VNEW(new_hash_table, table_size, struct Tree_Node);
 
-     new_hash_table->table_size = table_size;
-     new_hash_table->key_len = str_len;
-     memset(new_hash_table->children, 0, sizeof(struct Tree_Node) * table_size); /* 初始化为0 */
+    new_hash_table->table_size = table_size;
+    new_hash_table->key_len = str_len;
+    memset(new_hash_table->children, 0, sizeof(struct Tree_Node) * table_size); /* 初始化为0 */
 
-     return new_hash_table;
+    return new_hash_table;
 }
 
 /* 保存hash槽链表尾指针,用于维持槽链表有序 */
 struct Suf_Node ***make_tails(Pat_Num_T table_size, Tree_Node_T child)
 {
-  struct Suf_Node ***tails = MALLOC(table_size, struct Suf_Node **), ***p = tails;
-
-  while (table_size--) 
-    *p++ = (struct Suf_Node **) &(child++)->link;
+    struct Suf_Node ***tails = MALLOC(table_size, struct Suf_Node **), ***p = tails;
+    
+    while (table_size--) 
+	*p++ = (struct Suf_Node **) &(child++)->link;
   
-  return tails;
+    return tails;
 }
 
 void build_hash_table(Tree_Node_T t, Pat_Num_T str_num, Pat_Len_T str_len)  
 {
 #if PROFILING
-  type_num[HASH].num++;
+    type_num[HASH].num++;
 #endif
 
-  Pat_Num_T table_size = ceill((long double) (str_num) / LOAD_FACTOR);
-  Hash_Table_T hash_table = make_hash_table(table_size, str_len);
-  struct Suf_Node ***tails = make_tails(table_size, hash_table->children);
+    Pat_Num_T table_size = ceill((long double) (str_num) / LOAD_FACTOR);
+    Hash_Table_T hash_table = make_hash_table(table_size, str_len);
+    struct Suf_Node ***tails = make_tails(table_size, hash_table->children);
 
-  /* 把每个后缀放入其对应的哈希槽中 */
-  for (Suf_Node_T cur_suf = t->link, next_suf; cur_suf; cur_suf = next_suf) {
-    next_suf = cur_suf->next;
-    cur_suf->next = NULL;
-    Hash_Value_T v = hash(cur_suf->str, str_len, table_size);
-    *tails[v] = cur_suf; tails[v] = &cur_suf->next;
-  }
+    /* 把每个后缀放入其对应的哈希槽中 */
+    for (Suf_Node_T cur_suf = t->link, next_suf; cur_suf; cur_suf = next_suf) {
+	next_suf = cur_suf->next;
+	cur_suf->next = NULL;
+	Hash_Value_T v = hash(cur_suf->str, str_len, table_size);
+	*tails[v] = cur_suf; tails[v] = &cur_suf->next;
+    }
   
-  free(tails);
+    free(tails);
   
-  t->link = hash_table;
-  t->match_fun = (Match_Fun_T) match_hash;
+    t->link = hash_table;
+    t->match_fun = (Match_Fun_T) match_hash;
   
-  push_children(hash_table->children, table_size);
+    push_children(hash_table->children, table_size);
 }

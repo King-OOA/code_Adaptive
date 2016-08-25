@@ -78,7 +78,9 @@ void print_statistics(size_t text_len)
   digits = get_digits(type_num[TYPE_NUM-1].num); /* 最大数的位数 */
   /* 从大到小输出 */
   for (int8_t i = TYPE_NUM - 1; i > 0; i--)
-    printf("%-13s : %*u (%5.2f%%)\n", type_num[i].name, digits, type_num[i].num, ((double) type_num[i].num / total_num) * 100.0);
+    printf("%-13s : %*u (%5.2f%%)\n",
+	   type_num[i].name, digits, type_num[i].num,
+	   ((double) type_num[i].num / total_num) * 100.0);
 
   /* 打印访问深度 */
   total_calls = total_num = 0;
@@ -104,7 +106,9 @@ void print_statistics(size_t text_len)
   digits = get_digits(fun_calls[MATCH_FUN_NUM-1].num); /* 最大数的位数 */
   /* 从大到小输出 */
   for (int8_t i = TYPE_NUM - 1; i >= 0; i--)
-    printf("%-20s : %*u (%5.2f%%)\n", fun_calls[i].name, digits, fun_calls[i].num, ((double) fun_calls[i].num / total_num) * 100.0);
+    printf("%-20s : %*u (%5.2f%%)\n",
+	   fun_calls[i].name, digits, fun_calls[i].num,
+	   ((double) fun_calls[i].num / total_num) * 100.0);
 
   /* 打印不同长度map的数量 */
   printf("\nNumber of map with different size:\n");

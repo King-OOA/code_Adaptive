@@ -1,5 +1,5 @@
 OBJS = share.o hash.o map.o array.o statistics.o sorter.o filter.o
-LIBS = -ladt -lcommon -lm -lbits #-lmakedata
+LIBS = -ladt -lbits -lcommon -lmem -lpatset -lm
 
 #OBJS := $(patsubst ./src/%.c, %.o, $(wildcard ./src/*.c))
 CC = gcc
@@ -10,18 +10,21 @@ INCLUDE_2 = ./include
 vpath %.h $(INCLUDE_1) $(INCLUDE_2)
 vpath %.c ./src
 
-CFLAGS = -Wall -c -O3 -std=c99 -I$(INCLUDE_1) -I$(INCLUDE_2)
+CFLAGS = -Wall -c -std=c99 -O3 -I$(INCLUDE_1) -I$(INCLUDE_2)
 
-c: main.o $(OBJS) $(LIBS)
+ad_filter: main.o $(OBJS) $(LIBS)
 	$(CC) $^ -o $@
 	rm *.o
 
-$(OBJS): share.h common.h binary.h statistics.h
+$(OBJS): share.h mem.h
 
-$(OBJS): %.o: %.c %.h
+main.o: main.c hash.h common.h map.h bits.h sorter.h array.h filter.h
 	$(CC) $(CFLAGS) $< -o $@
 
-main.o: main.c hash.h common.h map.h binary.h sorter.h array.h stack.h filter.h #makedata.h
+share.o: share.c common.h
+	$(CC) $(CFLAGS) $< -o $@
+
+$(OBJS): %.o: %.c %.h
 	$(CC) $(CFLAGS) $< -o $@
 
 .PHONY: ra
