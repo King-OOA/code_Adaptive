@@ -7,21 +7,22 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "common.h"
-//#include "makedata.h"
+#include "adt.h"
+#include "bits.h"
+#include "patset.h"
+#include "mem.h"
+
 #include "hash.h"
 #include "share.h"
-#include "queue.h"
-#include "stack.h"
 #include "filter.h"
+
 #include "array.h"
 #include "map.h"
 #include "sorter.h"
 #include "statistics.h"
-#include "binary.h"
-
-Stack_T stk;
 
 extern uint32_t match_num; /* 任何情况下都要输出,以验证程序正确性 */
+Stack_T stk;
 
 #if PROFILING
 extern Num_Num_T access_depth[LLP];
@@ -31,68 +32,33 @@ extern unsigned total_nodes;
 #if DEBUG
 void print_pat_list(Suf_Node_T list_head)
 {
-     puts("the pat list");
+    puts("the pat list");
   
-     while (list_head) {
-	  assert(strlen(list_head->str));
-	  printf("%s\n", list_head->str);
-	  list_head = list_head->next;
-     }
+    while (list_head) {
+	assert(strlen(list_head->str));
+	printf("%s\n", list_head->str);
+	list_head = list_head->next;
+    }
 }
 #endif 
-
-static Suf_Node_T make_suffix_node(Char_T const *pat, Pat_Len_T pat_len)
-{
-     Suf_Node_T new_suf_node;
-
-     new_suf_node = VMALLOC(struct Suf_Node, Char_T, pat_len);
-     strcpy(new_suf_node->str, pat);
-     new_suf_node->next = NULL;
-
-     return new_suf_node;
-}
-
-static Suf_Node_T read_pats(FILE *pats_fp)
-{
-     Char_T buf[MAX_PAT_LEN+1]; /*模式串缓存,包括换行符*/
-     Pat_Len_T pat_len;
-     Pat_Num_T pat_num = 0;
-     Char_T *line_break = NULL; /*换行符指针*/
-     Suf_Node_T list_head = NULL, new_suf_node = NULL; /* 链表头指针 */
-
-     printf("\nReading Patterns...\n");
-     while (fgets(buf, sizeof(buf), pats_fp)) {
-	  if ((line_break = strchr(buf, '\n')))
-	       *line_break = '\0';
-	  if ((pat_len = strlen(buf))) { /* 必须是非空模式串 */
-	       pat_num++;
-	       new_suf_node = make_suffix_node(buf, pat_len+1); /* buf末尾包含'\0' */
-	       new_suf_node->next = list_head; /* 挂到链表头 */
-	       list_head = new_suf_node; /* 新连表头 */
-	  }
-     }
-     printf("%u patterns readed!\n", pat_num);
-
-     return list_head;
-}
 
 /* 有序链表去重,头节点一定会保留 */
 static void remove_duplicates(Suf_Node_T pat_list)
 {
-     Suf_Node_T prev = pat_list, cur = prev->next;
-     uint32_t n = 0;
-     int8_t result;
+    Suf_Node_T prev = pat_list, cur = prev->next;
+    uint32_t n = 0;
+    int8_t result;
 
-     printf("\nRemoving duplicates...\n");
+    printf("\nRemoving duplicates...\n");
 
-     while (cur)
-	  if ((result = strcmp(prev->str, cur->str)) == 0) { /* 模式串不等长,均以'\0'结尾*/
-	       cur = cur->next; free(prev->next); prev->next = cur; n++;
-	  } else {
-	       prev = cur; cur = cur->next;
-	  }
+    while (cur)
+	if ((result = strcmp(prev->str, cur->str)) == 0) { /* 模式串不等长,均以'\0'结尾*/
+	    cur = cur->next; free(prev->next); prev->next = cur; n++;
+	} else {
+	    prev = cur; cur = cur->next;
+	}
 
-     printf("%u patterns removed!\n", n);
+    printf("%u patterns removed!\n", n);
 }
 
 Pat_Len_T get_lss(Suf_Node_T suf_list)
@@ -168,26 +134,22 @@ static void build_tree_node(Tree_Node_T t)
 	  build_hash_table(t, ndp, lss);
 }
 
-Filter_T build_AMT(Char_T *pats_file_name)
+Filter_T build_AMT(Suf_Node_T pat_list)
 {
-     FILE *pats_fp = Fopen(pats_file_name, "rb");
-
      clock_t start = clock();
-     Suf_Node_T pat_list = list_radix_sort(read_pats(pats_fp)); /* 读取模式集,并按模式串字典序排序 */
-     Fclose(pats_fp);
-     remove_duplicates(pat_list); /* 去掉模式集中重复的元素 */
-     stk = Stack_new();
 
+     stk = stack_new();
      Filter_T root = build_filter(pat_list); /* 根节点为过滤器 */
 
      fprintf(stderr, "\nBuilding AMT...\n"); fflush(stdout);
-     while (!Stack_empty(stk)) /* 构建整个AMT */
-	  build_tree_node(Stack_pop(stk));
-     clock_t end = clock();
+     while (!stack_empty(stk)) /* 构建整个AMT */
+	  build_tree_node(stack_pop(stk));
+ 
+    clock_t end = clock();
      fprintf(stderr, "Done! (%f)\n",
 	     (double) (end - start) / CLOCKS_PER_SEC);
 
-     Stack_free(&stk);
+     stack_free(&stk);
 
      return root;
 }
@@ -262,11 +224,21 @@ void matching(Filter_T filter, Char_T *text_buf, size_t text_len)
 	     (double) (end - start) / CLOCKS_PER_SEC, (double) (text_len - hit_num) / text_len);
 }
 
+/* 将模式集中的模式串,拷贝到后缀链表节点中 */
+static void copy_pat(void **pat_p, void *next_pp)
+{
+#define SUF **((Suf_Node_T **) next_pp) 
+    
+    VNEW0(SUF, strlen(*pat_p)+1, Char_T);
+    strcpy((SUF)->str, *pat_p);
+    *((Suf_Node_T **) next_pp) = &(SUF)->next;
+}
+
 int main(int argc, char **argv)
 {
-     bool show_sta_info = false;
-     Char_T opt;
-       
+    bool output = false, show_sta_info = false;
+    Char_T opt;
+    
 /* 处理命令行参数 */
      if (argc > 3) 		/* 解析随后的参数 */
 	  for (char **arg = argv + 3; *arg && **arg == '-'; arg++)
@@ -277,17 +249,27 @@ int main(int argc, char **argv)
 		    default : fprintf(stderr, "非法命令行参数!\n"); exit(EXIT_FAILURE);
 		    }
 
-     /* 构建AMt */
-     Filter_T root = build_AMT(argv[1]); /* argv[1]是模式集文件名,root是过滤器 */
 
-     /* 读文本 */
-     fprintf(stderr, "\nLoading text...\n"); fflush(stdout);
-     size_t file_size;
-     Char_T *text_buf = load_file(argv[2], &file_size); /* argv[2]是文本文件名 */
-     printf("%lu bytes loaded!\n", file_size);
+    /* 构建模式集 */
+    Patset_T patset = patset_new(argv[1]);
+    Suf_Node_T pat_list, *next_p = &pat_list;
+    /* 将模式集中的模式串依次拷贝到pat_list中 */
+    list_traverse(patset->pat_list, copy_pat, &next_p);
+    /* 读取模式集,并按模式串字典序排序 */
+    pat_list = list_radix_sort(pat_list); 
+    remove_duplicates(pat_list); /* 去掉模式集中重复的元素 */    
+    
+    /* 构建AMT,根节点为过滤器 */
+    Filter_T root = build_AMT(pat_list);
+
+    /* 读文本 */
+    fprintf(stderr, "\nLoading text...\n"); fflush(stdout);
+    size_t file_size;
+    Char_T *text_buf = load_file(argv[2], &file_size); /* argv[2]是文本文件名 */
+    printf("%lu bytes loaded!\n", file_size);
 
      /* 匹配文本 */
-     output_buf = MALLOC(1, struct Output_Buf);
+     output_buf = MALLOC(1, struct Output_Buf); /* 在share.h中定义 */
      matching(root, text_buf, file_size);
      fprintf(stderr, "\nTotal matched number: %u\n", match_num);
   
@@ -295,5 +277,4 @@ int main(int argc, char **argv)
      if (show_sta_info)
 	  print_statistics(file_size); /* 打印程序运行过程中的各种统计信息 */
 #endif
-
 }

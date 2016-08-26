@@ -2,7 +2,10 @@
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "binary.h"
+
+#include "bits.h"
+#include "mem.h"
+
 #include "filter.h"
 #include "share.h"
 #include "common.h"
@@ -12,7 +15,8 @@ static uint32_t pow_256[] = {1, 256, 256*256, 256*256*256};
 static Filter_T filter_new(int8_t block_size, Pat_Len_T lss)
 {
      uint32_t n = pow_256[block_size];
-     Filter_T new_filter = VMALLOC(struct filter, Bitmap_T, n);
+     Filter_T new_filter;
+     VNEW(new_filter, n, Bitmap_T);
 
      new_filter->block_size = block_size;
      new_filter->window_size = lss;

@@ -4,12 +4,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include "share.h"
-#include "common.h"
 #include <stdint.h>
+
+#include "common.h"
+#include "mem.h"
+#include "adt.h"
+#include "bits.h"
+
 #include "array.h"
 #include "statistics.h"
-#include "binary.h"
+#include "share.h"
+
 
 extern Str_Num_T type_num[];
 extern Str_Num_T fun_calls[];
@@ -43,8 +48,6 @@ typedef struct Merged_Str {
      Pat_Len_T *len_array;
      Char_T str[];
 } *Merged_Str_T;
-
-
 
 static Tree_Node_T match_single_str(Tree_Node_T t, Char_T const *entrance, Char_T const **pos_p)
 {
@@ -187,18 +190,19 @@ static Tree_Node_T match_merged_str(Tree_Node_T t, Char_T const *entrance, Char_
 
 static Single_Str_T single_str_new(Pat_Len_T str_len)
 {
-     Single_Str_T new_single_str = VMALLOC(struct Single_Str, Char_T, str_len);
+  Single_Str_T new_single_str;
+  VNEW(new_single_str, str_len, Char_T);
 
-     new_single_str->str_len = str_len;
-     new_single_str->child.match_fun = NULL;
-     new_single_str->child.link = NULL;
+  new_single_str->str_len = str_len;
+  new_single_str->child.match_fun = NULL;
+  new_single_str->child.link = NULL;
 
-     return new_single_str;
+  return new_single_str;
 }
 
 static Str_Array_T str_array_new(Pat_Num_T str_num, Pat_Len_T str_len)
 {
-     Str_Array_T new_array = VMALLOC(struct Str_Array, Char_T, str_len * str_num);
+  Str_Array_T new_array = VNEW0(new_array, str_len * str_num, Char_T);
 
      new_array->str_num = str_num;
      new_array->str_len = str_len;
@@ -246,82 +250,83 @@ void build_single_str(Tree_Node_T t, Char_T *merged_pats)
 static void build_str_array(Tree_Node_T t, Pat_Num_T str_num, Pat_Len_T str_len)
 {
 #if PROFILING
-     type_num[ARRAY].num++;
+  type_num[ARRAY].num++;
 #endif
 
-     Suf_Node_T suf_list = t->link;
-     Str_Array_T str_array = str_array_new(str_num, str_len); /* 构建str_array */
-     Char_T *cur_str, prev_str[str_len], *str_buf = str_array->str_buf; /* prev_str为变长数组 */
-     int32_t i = -1;
+  Suf_Node_T suf_list = t->link;
+  Str_Array_T str_array = str_array_new(str_num, str_len); /* 构建str_array */
+  Char_T *cur_str, prev_str[str_len], *str_buf = str_array->str_buf; /* prev_str为变长数组 */
+  int32_t i = -1;
   
-     prev_str[0] = '\0';
+  prev_str[0] = '\0';
 
-     Flag_T *pat_end_flag = str_num > POINTER_SIZE * BITS_PER_BYTE ?
-	  str_array->pat_end_flag : (Flag_T *) &str_array->pat_end_flag;
+  Flag_T *pat_end_flag = str_num > POINTER_SIZE * BITS_PER_BYTE ?
+    str_array->pat_end_flag : (Flag_T *) &str_array->pat_end_flag;
   
-     struct Suf_Node **next_p = (struct Suf_Node **) &str_array->children[0].link;
+  struct Suf_Node **next_p = (struct Suf_Node **) &str_array->children[0].link;
   
-     for (Suf_Node_T cur_suf = suf_list, next_suf; cur_suf; cur_suf = next_suf) {
-	  next_suf = cur_suf->next;
-	  if (!same_str((cur_str = cur_suf->str), prev_str, str_len)) {
-	       *next_p = NULL; memcpy(str_buf + (++i) * str_len, cur_str, str_len); /*原链表终止, 指向新链表头 */
-	       next_p = (struct Suf_Node **) &str_array->children[i].link;
-	       memcpy(prev_str, cur_str, str_len);
-	  }
+  for (Suf_Node_T cur_suf = suf_list, next_suf; cur_suf; cur_suf = next_suf) {
+    next_suf = cur_suf->next;
+    if (!same_str((cur_str = cur_suf->str), prev_str, str_len)) {
+      *next_p = NULL; memcpy(str_buf + (++i) * str_len, cur_str, str_len); /*原链表终止, 指向新链表头 */
+      next_p = (struct Suf_Node **) &str_array->children[i].link;
+      memcpy(prev_str, cur_str, str_len);
+    }
 
-	  if ((cur_suf = cut_head(cur_suf, str_len))) {
-	       *next_p = cur_suf; next_p = &cur_suf->next;
-	  } else
-	       set_bit(pat_end_flag, i);
-     }
+    if ((cur_suf = cut_head(cur_suf, str_len))) {
+      *next_p = cur_suf; next_p = &cur_suf->next;
+    } else
+      set_bit(pat_end_flag, i);
+  }
 
-     *next_p = NULL;
+  *next_p = NULL;
 
 #if DEBUG
-     assert(str_num == i+1);
+  assert(str_num == i+1);
 #endif 
 
-     t->link = str_array;
-     t->match_fun = (str_num > SMALL_ARRAY_SIZE ? array_binary_match : array_ordered_match);
+  t->link = str_array;
+  t->match_fun = (str_num > SMALL_ARRAY_SIZE ? array_binary_match : array_ordered_match);
 
-     push_children(str_array->children, str_num);
+  push_children(str_array->children, str_num);
 }
 
 static void build_map_65536(Tree_Node_T t)
 {
 #if PROFILING
-     type_num[MAP_65536].num++;
+  type_num[MAP_65536].num++;
 #endif     
 
-     Map_65536_T map_65536 = CALLOC(1, struct Map_65536);
+  Map_65536_T map_65536;
+  NEW0(map_65536);
+  
+  Suf_Node_T suf_list = t->link;
+  struct Suf_Node **next_p = (struct Suf_Node **) &map_65536->children[0].link; /* 初始化 */
+  uint16_t pre_block = 0, cur_block;
 
-     Suf_Node_T suf_list = t->link;
-     struct Suf_Node **next_p = (struct Suf_Node **) &map_65536->children[0].link; /* 初始化 */
-     uint16_t pre_block = 0, cur_block;
-
-     for (Suf_Node_T cur_suf = suf_list, next_suf; cur_suf; cur_suf = next_suf) {
-	  next_suf = cur_suf->next;
-	  if ((cur_block = block_123(cur_suf->str, 2)) != pre_block) { /* 终止上一个链表,跳转到新链表头 */
+  for (Suf_Node_T cur_suf = suf_list, next_suf; cur_suf; cur_suf = next_suf) {
+    next_suf = cur_suf->next;
+    if ((cur_block = block_123(cur_suf->str, 2)) != pre_block) { /* 终止上一个链表,跳转到新链表头 */
 #if DEBUG
-	       assert(cur_block > 0 && cur_block < 65536);
+      assert(cur_block > 0 && cur_block < 65536);
 #endif 
-	       *next_p = NULL;
-	       next_p = (struct Suf_Node **) &map_65536->children[cur_block].link;
-	       pre_block = cur_block;
-	  }
+      *next_p = NULL;
+      next_p = (struct Suf_Node **) &map_65536->children[cur_block].link;
+      pre_block = cur_block;
+    }
 
-	  if ((cur_suf = cut_head(cur_suf, 2))) {
-	       *next_p = cur_suf; next_p = &cur_suf->next;
-	  } else
-	       set_bit(map_65536->pat_end_flag, cur_block);
-     }
+    if ((cur_suf = cut_head(cur_suf, 2))) {
+      *next_p = cur_suf; next_p = &cur_suf->next;
+    } else
+      set_bit(map_65536->pat_end_flag, cur_block);
+  }
 
-     *next_p = NULL;
+  *next_p = NULL;
      
-     t->link = map_65536;
-     t->match_fun = match_map_65536;
+  t->link = map_65536;
+  t->match_fun = match_map_65536;
 
-     push_children(map_65536->children, 65536);
+  push_children(map_65536->children, 65536);
 }
 
 void build_merged_str(Tree_Node_T t, Char_T *merged_pats, Pat_Len_T *len_array)
@@ -335,7 +340,7 @@ void build_merged_str(Tree_Node_T t, Char_T *merged_pats, Pat_Len_T *len_array)
      for (str_num = 0; (len = len_array[str_num]); str_num++)
 	  total_len += len;
      
-     Merged_Str_T merged_str = VMALLOC(struct Merged_Str, Char_T, total_len);
+     Merged_Str_T merged_str = VNEW(merged_str, total_len, Char_T);
      merged_str->str_num = str_num;
      memcpy(merged_str->str, merged_pats, total_len);
      merged_str->len_array = MALLOC(str_num, Pat_Len_T);
@@ -370,4 +375,3 @@ void build_array(Tree_Node_T t, Pat_Num_T str_num, Pat_Len_T str_len)
 	  build_str_array(t, str_num, str_len);
      }
 }
-

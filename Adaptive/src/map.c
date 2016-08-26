@@ -5,10 +5,12 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
+
 #include "share.h"
-#include "binary.h"
+#include "bits.h"
 #include "common.h"
 #include "map.h"
+#include "mem.h"
 #include "statistics.h"
 
 extern Num_Num_T map_size[];
@@ -53,6 +55,7 @@ typedef struct Map_256 {
 static Tree_Node_T match_map_1(Tree_Node_T t, Char_T const *entrance, Char_T const **pos_p)
 {
 #if PROFILING
+
      fun_calls[MATCH_MAP_1].num++;
 #endif
 
@@ -175,9 +178,6 @@ static Tree_Node_T match_map_256(Tree_Node_T t, Char_T const *entrance, Char_T c
 
      return child->link == NULL ? NULL : child;
 }
-
-
-
 
 /* 所有后缀的首字符相同 */
 void build_map_1(Tree_Node_T t, Char_T ch)
@@ -351,7 +351,7 @@ void build_map(Tree_Node_T t, Pat_Num_T key_num)
      map_size[key_num].num_1 = key_num;
      map_size[key_num].num_2++;
 #endif
- 
+
      if (key_num <= 4)
 	  build_map_4(t, key_num);
      else if (key_num <= 16)
